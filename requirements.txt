@@ -1,4 +1,2 @@
 Flask
 yt-dlp
-ffmpeg-python
-static-ffmpeg
