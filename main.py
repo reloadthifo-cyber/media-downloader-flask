@@ -25,9 +25,9 @@ def download_video():
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
     # Базовые настройки
-  ydl_opts = {
+ ydl_opts = {
     'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-    'ffmpeg_location': os.environ.get('FFMPEG_BIN', 'ffmpeg'),
+    'ffmpeg_location': 'ffmpeg',
 }
 
     # Настраиваем формат
