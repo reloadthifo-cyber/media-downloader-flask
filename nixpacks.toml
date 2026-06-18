@@ -1,2 +1,2 @@
-[providers.python]
-nixPackages = ["ffmpeg"]
+[phases.setup]
+nixPkgs = ["...", "ffmpeg"]
