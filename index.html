@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Скачать видео или аудио</title>
+</head>
+<body style="background-color: #1e1e1e; color: white; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
+
+    <div style="background: #2d2d2d; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; max-width: 550px; width: 100%;">
+        <h1 style="margin-bottom: 10px; color: #4caf50;">Медиа Загрузчик</h1>
+        <p style="color: #aaa; margin-bottom: 30px;">Вставьте ссылку на видео (YouTube, TikTok и др.)</p>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <input type="text" id="video-url" placeholder="Вставьте ссылку сюда..." style="flex: 1; min-width: 200px; padding: 15px; border: none; border-radius: 8px; background: #3a3a3a; color: white; font-size: 16px; outline: none;">
+            
+            <select id="download-format" style="padding: 15px; border: none; border-radius: 8px; background: #444; color: white; font-size: 16px; font-weight: bold; cursor: pointer; outline: none;">
+                <option value="video">Видео (MP4)</option>
+                <option value="audio">Аудио (MP3)</option>
+            </select>
+
+            <button id="download-btn" style="padding: 15px 25px; border: none; border-radius: 8px; background: #4caf50; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;">Скачать</button>
+        </div>
+
+        <div id="result-block" style="font-size: 16px; margin-top: 10px; line-height: 1.5;"></div>
+    </div>
+
+    <script>
+        document.getElementById('download-btn').addEventListener('click', async () => {
+            const urlInput = document.getElementById('video-url').value;
+            const formatSelect = document.getElementById('download-format').value;
+            const resultBlock = document.getElementById('result-block');
+            
+            if (!urlInput) {
+                alert('Пожалуйста, вставьте ссылку!');
+                return;
+            }
+
+            resultBlock.style.color = '#ffeb3b';
+            resultBlock.innerText = 'Обработка и скачивание медиа... Пожалуйста, подождите...';
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: urlInput, format: formatSelect }) // Отправляем формат серверу
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    resultBlock.style.color = '#4caf50';
+                    resultBlock.innerHTML = `
+                        <div>Готово: <strong>${result.title}</strong></div><br>
+                        <a href="/get-file/${result.file_id}" style="display: inline-block; padding: 12px 25px; background: #4caf50; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                            Сохранить на ПК
+                        </a>
+                    `;
+                } else {
+                    resultBlock.style.color = '#f44336';
+                    resultBlock.innerText = 'Ошибка: ' + result.error;
+                }
+            } catch (error) {
+                resultBlock.style.color = '#f44336';
+                resultBlock.innerText = 'Не удалось связаться с сервером.';
+            }
+        });
+    </script>
+
+</body>
+</html>
