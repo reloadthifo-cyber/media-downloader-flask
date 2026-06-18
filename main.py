@@ -25,10 +25,10 @@ def download_video():
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
     # Базовые настройки
-    ydl_opts = {
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-        'ffmpeg_location': os.getcwd(),  # ПРИНУДИТЕЛЬНО УКАЗЫВАЕМ НАШУ ПАПКУ С ФАЙЛАМИ FFMPEG
-    }
+   ydl_opts = {
+    'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
+    'ffmpeg_location': 'static_ffmpeg',
+}
 
     # Настраиваем формат
     if download_format == 'audio':
