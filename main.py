@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='.')
 
 DOWNLOAD_FOLDER = 'downloads'
 if not os.path.exists(DOWNLOAD_FOLDER):
