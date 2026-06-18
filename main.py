@@ -61,8 +61,11 @@ def get_file(file_id):
         return send_file(file_path, as_attachment=True)
     return 'Файл не найден', 404
 
+import os
+
+import os
+
 if __name__ == '__main__':
-    # Сервер сам скажет, какой порт использовать, иначе берем 5000
-    port = int(os.environ.get('PORT', 5000))
-    # На сервере debug должен быть False ради безопасности
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # Переменная PORT берется из настроек хостинга, а если её нет (например, на ПК) — ставится 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
