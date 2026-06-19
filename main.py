@@ -22,12 +22,19 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # Опции маскировки под браузер для обхода блокировок YouTube
+    # Обновленные опции для пробива блокировки YouTube
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
         'format': 'best',
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'noplaylist': True,
+        # ТРЮК: Заставляем использовать IOS/Android клиенты плеера (они реже выдают 429 ошибку)
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['ios', 'android'],
+                'skip': ['webpage']
+            }
+        }
     }
 
     try:
@@ -36,7 +43,7 @@ def download_video():
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
         
-        # Шаг 2: Если пользователь выбрал аудио — пересохраняем в MP3 через ffmpeg
+        # Шаг 2: Если пользователь выбрал аудио — конвертируем
         if download_format == 'audio':
             mp3_filename = os.path.splitext(filename)[0] + '.mp3'
             
