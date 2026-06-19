@@ -3,9 +3,7 @@ import subprocess
 import glob
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
-import imageio_ffmpeg  # Наш секретный козырь для конвертации
 
-# Убрали template_folder='.', так как у тебя теперь есть нормальная папка templates
 app = Flask(__name__)
 
 DOWNLOAD_FOLDER = 'downloads'
@@ -32,42 +30,32 @@ def download_video():
     }
 
     try:
-        # Скачиваем оригинальный файл (MP4)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
         
-        # Проверка реального расширения
+        # Если расширение не определилось (бывает у yt-dlp)
         if not os.path.exists(filename):
             base_path = os.path.splitext(filename)[0]
-            found_files = glob.glob(base_path + '.*')
-            if found_files:
-                filename = found_files[0]
+            found = glob.glob(base_path + '.*')
+            if found: filename = found[0]
 
-        # Конвертация в аудио
+        # Конвертация
         if download_format == 'audio':
             mp3_filename = os.path.splitext(filename)[0] + '.mp3'
             
-            # Получаем 100% рабочий путь к ffmpeg из Python-библиотеки
-            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
-            
+            # ВАЖНО: используем просто 'ffmpeg' (он должен быть установлен в nixpacks)
             subprocess.run([
-                ffmpeg_exe, '-i', filename, 
+                'ffmpeg', '-i', filename, 
                 '-vn', '-acodec', 'libmp3lame', 
                 '-q:a', '2', '-y', mp3_filename
             ], check=True)
             
-            # Удаляем исходный видеофайл
             if os.path.exists(filename) and filename != mp3_filename:
                 os.remove(filename)
-                
             filename = mp3_filename
 
-        return jsonify({
-            'success': True, 
-            'file_id': os.path.basename(filename), 
-            'title': info.get('title', 'Media')
-        })
+        return jsonify({'success': True, 'file_id': os.path.basename(filename), 'title': info.get('title', 'Media')})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
