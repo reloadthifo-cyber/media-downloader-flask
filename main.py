@@ -1,8 +1,8 @@
 import os
-import shutil
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
+# Ищем шаблоны в текущей папке (в корне)
 app = Flask(__name__, template_folder='.')
 
 DOWNLOAD_FOLDER = 'downloads'
@@ -34,7 +34,6 @@ def download_video():
             'preferredquality': '192',
         }]
     else:
-        # Для видео используем формат по умолчанию
         ydl_opts['format'] = 'best'
 
     try:
