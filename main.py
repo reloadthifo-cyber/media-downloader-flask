@@ -1,6 +1,6 @@
 import os
 import glob
-from flask import Flask, render_template, request, jsonify, send_file, after_this_request
+from flask import Flask, render_template, request, jsonify, Response, stream_with_context, after_this_request
 import yt_dlp
 
 # Получаем путь к корневой директории, где лежат main.py и index.html
@@ -38,6 +38,7 @@ def download_video():
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
         'format': 'best', # Скачиваем лучшее качество без конвертации
         'noplaylist': True,
+        'max_filesize': 350 * 1024 * 1024, # Дополнительная защита: не качать файлы больше 350 МБ
     }
 
     try:
@@ -58,6 +59,9 @@ def download_video():
             'title': info.get('title', 'Media')
         })
     except Exception as e:
+        # Если файл упал из-за превышения размера
+        if 'File is larger than max-filesize' in str(e):
+            return jsonify({'success': False, 'error': 'Файл слишком большой. Лимит сервера: 350 МБ.'}), 400
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/get-file/<file_id>')
@@ -65,17 +69,28 @@ def get_file(file_id):
     file_path = os.path.join(DOWNLOAD_FOLDER, file_id)
     
     if os.path.exists(file_path):
-        # Удаляем файл сразу после того, как он отправится пользователю
-        @after_this_request
-        def remove_file(response):
+        # Функция-генератор: читает файл блоками по 8 КБ и сразу отдает в сеть
+        def generate():
             try:
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                app.logger.error(f"Ошибка при удалении файла: {e}")
-            return response
-            
-        return send_file(file_path, as_attachment=True)
+                with open(file_path, 'rb') as f:
+                    while chunk := f.read(8192):
+                        yield chunk
+            finally:
+                # Этот блок выполнится ОГОВОРОЧНО после того, как генератор закончит отдачу
+                try:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    app.logger.error(f"Ошибка при удалении файла в генераторе: {e}")
+
+        # Формируем безопасный потоковый ответ
+        response = Response(
+            stream_with_context(generate()),
+            mimetype='application/octet-stream'
+        )
+        # Добавляем заголовок, чтобы браузер скачивал файл, а не открывал внутри вкладки
+        response.headers["Content-Disposition"] = f"attachment; filename={file_id}"
+        return response
     
     return 'Файл не найден', 404
 
