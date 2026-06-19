@@ -162,19 +162,26 @@
         const modal = document.getElementById('agreementModal');
         let hasAgreed = false;
 
-        // Следим за галочками: кнопка "Готово" активируется только когда выбраны все 3
+        // Функция, которая проверяет все галочки и активирует кнопку
+        function checkRequirements() {
+            const allChecked = Array.from(checkboxes).every(c => c.checked);
+            if (allChecked) {
+                submitBtn.removeAttribute('disabled');
+                submitBtn.classList.add('active');
+            } else {
+                submitBtn.setAttribute('disabled', 'true');
+                submitBtn.classList.remove('active');
+            }
+        }
+
+        // Запускаем проверку при каждом изменении галочек
         checkboxes.forEach(chk => {
-            chk.addEventListener('change', () => {
-                const allChecked = Array.from(checkboxes).every(c => c.checked);
-                if (allChecked) {
-                    submitBtn.removeAttribute('disabled');
-                    submitBtn.classList.add('active');
-                } else {
-                    submitBtn.setAttribute('disabled', 'true');
-                    submitBtn.classList.remove('active');
-                }
-            });
+            chk.addEventListener('change', checkRequirements);
+            chk.addEventListener('click', checkRequirements); // Дополнительная фиксация клика
         });
+
+        // Запускаем проверку сразу при загрузке страницы (на случай если браузер их закешировал)
+        window.addEventListener('DOMContentLoaded', checkRequirements);
 
         // Нажатие на кнопку "Готово" закрывает модалку
         submitBtn.addEventListener('click', () => {
@@ -184,4 +191,38 @@
             }
         });
 
-        // Логика отправки запроса на
+        // Логика отправки запроса на скачивание
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            const urlInput = document.getElementById('videoUrl').value;
+            const errorBlock = document.getElementById('errorBlock');
+            const successBlock = document.getElementById('successBlock');
+
+            errorBlock.style.display = 'none';
+            successBlock.style.display = 'none';
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: urlInput,
+                        agreed: hasAgreed
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    errorBlock.innerText = 'Ошибка: ' + result.error;
+                    errorBlock.style.display = 'block';
+                } else {
+                    successBlock.innerText = `Успешно скачано: "${result.title}". Начинается загрузка...`;
+                    successBlock.style.display = 'block';
+                    window.location.href = `/get-file/${result.file_id}`;
+                }
+            } catch (err) {
+                errorBlock.innerText = 'Ошибка соединения с сервером.';
+                errorBlock.style.display = 'block';
+            }
+        });
+    </script>
