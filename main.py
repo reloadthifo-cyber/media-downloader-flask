@@ -1,42 +1,35 @@
 import os
+import shutil
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
-app = Flask(__name__) # Здесь всё правильно
+app = Flask(__name__)
 
-# ВЕРНИ ЭТОТ КУСОК:
+DOWNLOAD_FOLDER = 'downloads'
+if not os.path.exists(DOWNLOAD_FOLDER):
+    os.makedirs(DOWNLOAD_FOLDER)
+
 @app.route('/')
 def home():
     return render_template('index.html')
 
 @app.route('/download', methods=['POST'])
 def download_video():
-    # ... тут твой код ...
     data = request.json
     video_url = data.get('url')
     download_format = data.get('format', 'video')
 
-    # --- ВСТАВЛЯЙ СЮДА ---
-    import shutil
+    # Проверка FFmpeg
     ffmpeg_path = shutil.which('ffmpeg')
-    if ffmpeg_path:
-        print(f"DEBUG: FFmpeg найден по пути: {ffmpeg_path}")
-    else:
-        print("DEBUG: ВНИМАНИЕ! FFmpeg НЕ НАЙДЕН!")
-    # ---------------------
-    
+    print(f"DEBUG: FFmpeg путь: {ffmpeg_path}")
+
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
-    
-    # ... дальше остальной код ...
 
-    # Настройки теперь внутри функции, с правильными отступами
-# Базовые настройки
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-        # Убираем строку 'ffmpeg_location': 'ffmpeg',
     }
-    # Настраиваем формат
+
     if download_format == 'audio':
         ydl_opts['format'] = 'bestaudio/best'
         ydl_opts['postprocessors'] = [{
@@ -51,14 +44,13 @@ def download_video():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
-            
             if download_format == 'audio':
                 filename = os.path.splitext(filename)[0] + '.mp3'
             
             return jsonify({
                 'success': True, 
                 'file_id': os.path.basename(filename),
-                'title': info.get('title', 'Audio' if download_format == 'audio' else 'Video')
+                'title': info.get('title', 'Media')
             })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
