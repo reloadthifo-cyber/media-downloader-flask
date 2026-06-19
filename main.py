@@ -22,11 +22,11 @@ def download_video():
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
     # Настройки теперь внутри функции, с правильными отступами
+# Базовые настройки
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-        'ffmpeg_location': 'ffmpeg',
+        # Убираем строку 'ffmpeg_location': 'ffmpeg',
     }
-
     # Настраиваем формат
     if download_format == 'audio':
         ydl_opts['format'] = 'bestaudio/best'
