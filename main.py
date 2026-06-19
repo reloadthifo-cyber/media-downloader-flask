@@ -1,7 +1,5 @@
 import os
 from flask import Flask, render_template, request, jsonify, send_file
-from static_ffmpeg import add_paths
-add_paths()
 import yt_dlp
 
 
