@@ -3,9 +3,16 @@ import glob
 from flask import Flask, render_template, request, jsonify, send_file, after_this_request
 import yt_dlp
 
-app = Flask(__name__)
+# Явно указываем пути к корневой папке приложения для Render
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DOWNLOAD_FOLDER = 'downloads'
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, 'templates'),
+    static_folder=os.path.join(BASE_DIR, 'static')
+)
+
+DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
@@ -18,7 +25,7 @@ def download_video():
     data = request.json or {}
     video_url = data.get('url')
     
-    # ПРОВЕРКА СОГЛАСИЯ (теперь она обязательна)
+    # ПРОВЕРКА СОГЛАСИЯ
     agreed = data.get('agreed')
     if not agreed:
         return jsonify({'success': False, 'error': 'Вы должны согласиться с условиями'}), 400
@@ -41,9 +48,14 @@ def download_video():
         if not os.path.exists(filename):
             base_path = os.path.splitext(filename)[0]
             found = glob.glob(base_path + '.*')
-            if found: filename = found[0]
+            if found: 
+                filename = found[0]
 
-        return jsonify({'success': True, 'file_id': os.path.basename(filename), 'title': info.get('title', 'Media')})
+        return jsonify({
+            'success': True, 
+            'file_id': os.path.basename(filename), 
+            'title': info.get('title', 'Media')
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -56,9 +68,10 @@ def get_file(file_id):
         @after_this_request
         def remove_file(response):
             try:
-                os.remove(file_path)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
             except Exception as e:
-                print(f"Ошибка при удалении файла: {e}")
+                app.logger.error(f"Ошибка при удалении файла: {e}")
             return response
             
         return send_file(file_path, as_attachment=True)
