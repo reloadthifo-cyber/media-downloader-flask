@@ -2,7 +2,6 @@ import os
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
-# Ищем шаблоны в текущей папке (в корне)
 app = Flask(__name__, template_folder='.')
 
 DOWNLOAD_FOLDER = 'downloads'
@@ -17,32 +16,19 @@ def home():
 def download_video():
     data = request.json
     video_url = data.get('url')
-    download_format = data.get('format', 'video')
-
+    
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
+        'format': 'best' # Просто качаем лучшее видео
     }
-
-    if download_format == 'audio':
-        ydl_opts['format'] = 'bestaudio/best'
-        ydl_opts['postprocessors'] = [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }]
-    else:
-        ydl_opts['format'] = 'best'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
-            if download_format == 'audio':
-                filename = os.path.splitext(filename)[0] + '.mp3'
-            
             return jsonify({
                 'success': True, 
                 'file_id': os.path.basename(filename),
