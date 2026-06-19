@@ -1,5 +1,6 @@
 import os
 import subprocess
+import glob
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
@@ -15,45 +16,48 @@ def home():
 
 @app.route('/download', methods=['POST'])
 def download_video():
-    data = request.json
+    data = request.json or {}
     video_url = data.get('url')
     download_format = data.get('format', 'video')
 
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # Максимальный уровень обхода блокировок с использованием PO Token
+    # Базовые и самые стабильные опции для скачивания медиафайла
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-        'format': 'best',
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'format': 'best',  # Скачивает один готовый файл целиком (обычно mp4)
         'noplaylist': True,
-        # Активируем автоматический генератор токенов для обхода "Sign in to confirm you're not a bot"
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['web', 'android'],
-                'get_pot': 'get_pot'
-            }
-        }
     }
 
     try:
-        # Шаг 1: Скачиваем медиа как обычное видео
+        # Шаг 1: Скачиваем медиа как обычный файл
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
         
-        # Шаг 2: Если пользователь выбрал аудио — конвертируем в MP3
+        # Защита: проверяем реальное расширение файла (иногда yt-dlp качает mkv/webm вместо mp4)
+        if not os.path.exists(filename):
+            base_path = os.path.splitext(filename)[0]
+            found_files = glob.glob(base_path + '.*')
+            if found_files:
+                filename = found_files[0]
+
+        # Шаг 2: Если выбрано аудио — принудительно конвертируем скачанный файл в MP3
         if download_format == 'audio':
             mp3_filename = os.path.splitext(filename)[0] + '.mp3'
             
-            # Запуск системного ffmpeg
+            # Конвертируем с помощью системного ffmpeg
             subprocess.run([
                 'ffmpeg', '-i', filename, 
                 '-vn', '-acodec', 'libmp3lame', 
                 '-q:a', '2', '-y', mp3_filename
             ], check=True)
             
+            # Удаляем видео-оригинал, чтобы экономить место на хостинге
+            if os.path.exists(filename) and filename != mp3_filename:
+                os.remove(filename)
+                
             filename = mp3_filename
 
         return jsonify({
