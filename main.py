@@ -3,13 +3,14 @@ import glob
 from flask import Flask, render_template, request, jsonify, send_file, after_this_request
 import yt_dlp
 
-# Явно указываем пути к корневой папке приложения для Render
+# Получаем путь к корневой директории, где лежат main.py и index.html
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(
     __name__,
-    template_folder=os.path.join(BASE_DIR, 'templates'),
-    static_folder=os.path.join(BASE_DIR, 'static')
+    # Указываем Flask искать HTML-шаблоны прямо в корне, а не в папке templates
+    template_folder=BASE_DIR,
+    static_folder=BASE_DIR
 )
 
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
