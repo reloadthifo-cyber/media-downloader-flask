@@ -19,10 +19,6 @@ def download_video():
     video_url = data.get('url')
     download_format = data.get('format', 'video')
 
-    # Проверка FFmpeg
-    ffmpeg_path = shutil.which('ffmpeg')
-    print(f"DEBUG: FFmpeg путь: {ffmpeg_path}")
-
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
@@ -38,7 +34,8 @@ def download_video():
             'preferredquality': '192',
         }]
     else:
-        ydl_opts['format'] = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+        # Для видео используем формат по умолчанию
+        ydl_opts['format'] = 'best'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
