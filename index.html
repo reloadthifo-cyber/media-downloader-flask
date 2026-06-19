@@ -162,7 +162,6 @@
         const modal = document.getElementById('agreementModal');
         let hasAgreed = false;
 
-        // Функция, которая проверяет все галочки и активирует кнопку
         function checkRequirements() {
             const allChecked = Array.from(checkboxes).every(c => c.checked);
             if (allChecked) {
@@ -174,16 +173,13 @@
             }
         }
 
-        // Запускаем проверку при каждом изменении галочек
         checkboxes.forEach(chk => {
             chk.addEventListener('change', checkRequirements);
-            chk.addEventListener('click', checkRequirements); // Дополнительная фиксация клика
+            chk.addEventListener('click', checkRequirements);
         });
 
-        // Запускаем проверку сразу при загрузке страницы (на случай если браузер их закешировал)
         window.addEventListener('DOMContentLoaded', checkRequirements);
 
-        // Нажатие на кнопку "Готово" закрывает модалку
         submitBtn.addEventListener('click', () => {
             if (!submitBtn.hasAttribute('disabled')) {
                 modal.style.display = 'none';
@@ -191,7 +187,6 @@
             }
         });
 
-        // Логика отправки запроса на скачивание
         document.getElementById('downloadBtn').addEventListener('click', async () => {
             const urlInput = document.getElementById('videoUrl').value;
             const errorBlock = document.getElementById('errorBlock');
@@ -218,7 +213,15 @@
                 } else {
                     successBlock.innerText = `Успешно скачано: "${result.title}". Начинается загрузка...`;
                     successBlock.style.display = 'block';
-                    window.location.href = `/get-file/${result.file_id}`;
+                    
+                    // НОВЫЙ ИСПРАВЛЕННЫЙ МЕТОД ЗАГРУЗКИ (ДЛЯ iOS И ДРУГИХ СИСТЕМ):
+                    const fileUrl = `/get-file/${result.file_id}`;
+                    const a = document.createElement('a');
+                    a.href = fileUrl;
+                    a.download = result.file_id; 
+                    document.body.appendChild(a);
+                    a.click(); // Эмулируем реальный клик для Safari на iPhone
+                    document.body.removeChild(a);
                 }
             } catch (err) {
                 errorBlock.innerText = 'Ошибка соединения с сервером.';
@@ -226,3 +229,5 @@
             }
         });
     </script>
+</body>
+</html>
