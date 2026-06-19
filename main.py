@@ -22,6 +22,7 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
+    # Опции маскировки под браузер для обхода блокировок YouTube
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
         'format': 'best',
@@ -30,19 +31,29 @@ def download_video():
     }
 
     try:
-        # Скачиваем
+        # Шаг 1: Скачиваем медиа как обычное видео
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
         
-        # Конвертация
+        # Шаг 2: Если пользователь выбрал аудио — пересохраняем в MP3 через ffmpeg
         if download_format == 'audio':
             mp3_filename = os.path.splitext(filename)[0] + '.mp3'
-            # Используем полный путь к ffmpeg (обычно в Linux это просто 'ffmpeg')
-            subprocess.run(['ffmpeg', '-i', filename, '-vn', '-acodec', 'libmp3lame', '-q:a', '2', '-y', mp3_filename], check=True)
+            
+            # Запуск системного ffmpeg
+            subprocess.run([
+                'ffmpeg', '-i', filename, 
+                '-vn', '-acodec', 'libmp3lame', 
+                '-q:a', '2', '-y', mp3_filename
+            ], check=True)
+            
             filename = mp3_filename
 
-        return jsonify({'success': True, 'file_id': os.path.basename(filename), 'title': info.get('title', 'Media')})
+        return jsonify({
+            'success': True, 
+            'file_id': os.path.basename(filename), 
+            'title': info.get('title', 'Media')
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
