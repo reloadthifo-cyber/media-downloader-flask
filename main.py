@@ -1,11 +1,19 @@
 import os
 import glob
-from flask import Flask, render_template, request, jsonify, send_file, after_this_request
+from flask import Flask, render_template, request, jsonify, send_file, after_this_request, make_response
 import yt_dlp
 
-app = Flask(__name__)
+# Получаем путь к корневой директории, где лежат main.py и index.html
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DOWNLOAD_FOLDER = 'downloads'
+app = Flask(
+    __name__,
+    # Указываем Flask искать HTML-шаблоны прямо в корне, а не в папке templates
+    template_folder=BASE_DIR,
+    static_folder=BASE_DIR
+)
+
+DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
@@ -18,7 +26,7 @@ def download_video():
     data = request.json or {}
     video_url = data.get('url')
     
-    # ПРОВЕРКА СОГЛАСИЯ (теперь она обязательна)
+    # ПРОВЕРКА СОГЛАСИЯ
     agreed = data.get('agreed')
     if not agreed:
         return jsonify({'success': False, 'error': 'Вы должны согласиться с условиями'}), 400
@@ -41,9 +49,14 @@ def download_video():
         if not os.path.exists(filename):
             base_path = os.path.splitext(filename)[0]
             found = glob.glob(base_path + '.*')
-            if found: filename = found[0]
+            if found: 
+                filename = found[0]
 
-        return jsonify({'success': True, 'file_id': os.path.basename(filename), 'title': info.get('title', 'Media')})
+        return jsonify({
+            'success': True, 
+            'file_id': os.path.basename(filename), 
+            'title': info.get('title', 'Media')
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -56,12 +69,20 @@ def get_file(file_id):
         @after_this_request
         def remove_file(response):
             try:
-                os.remove(file_path)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
             except Exception as e:
-                print(f"Ошибка при удалении файла: {e}")
+                app.logger.error(f"Ошибка при удалении файла: {e}")
             return response
             
-        return send_file(file_path, as_attachment=True)
+        # Формируем специальный ответ с заголовками для обхода блокировок iOS (iPhone)
+        response = make_response(send_file(file_path, as_attachment=True, download_name=file_id))
+        response.headers['Content-Description'] = 'File Transfer'
+        # Маскируем под поток байт, чтобы Айфон не запускал плеер, а сохранял видео в Загрузки
+        response.headers['Content-Type'] = 'application/octet-stream' 
+        response.headers['Content-Disposition'] = f'attachment; filename="{file_id}"'
+        
+        return response
     
     return 'Файл не найден', 404
 
