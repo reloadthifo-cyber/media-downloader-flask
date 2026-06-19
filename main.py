@@ -1,6 +1,6 @@
 import os
 import glob
-from flask import Flask, render_template, request, jsonify, send_file, after_this_request
+from flask import Flask, render_template, request, jsonify, send_file, after_this_request, make_response
 import yt_dlp
 
 # Получаем путь к корневой директории, где лежат main.py и index.html
@@ -75,7 +75,14 @@ def get_file(file_id):
                 app.logger.error(f"Ошибка при удалении файла: {e}")
             return response
             
-        return send_file(file_path, as_attachment=True)
+        # Формируем специальный ответ с заголовками для обхода блокировок iOS (iPhone)
+        response = make_response(send_file(file_path, as_attachment=True, download_name=file_id))
+        response.headers['Content-Description'] = 'File Transfer'
+        # Маскируем под поток байт, чтобы Айфон не запускал плеер, а сохранял видео в Загрузки
+        response.headers['Content-Type'] = 'application/octet-stream' 
+        response.headers['Content-Disposition'] = f'attachment; filename="{file_id}"'
+        
+        return response
     
     return 'Файл не найден', 404
 
