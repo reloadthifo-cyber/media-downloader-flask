@@ -8,18 +8,25 @@ DOWNLOAD_FOLDER = 'downloads'
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
 @app.route('/download', methods=['POST'])
 def download_video():
     data = request.json
     video_url = data.get('url')
     download_format = data.get('format', 'video')
+
+    # --- ВСТАВЛЯЙ СЮДА ---
+    import shutil
+    ffmpeg_path = shutil.which('ffmpeg')
+    if ffmpeg_path:
+        print(f"DEBUG: FFmpeg найден по пути: {ffmpeg_path}")
+    else:
+        print("DEBUG: ВНИМАНИЕ! FFmpeg НЕ НАЙДЕН!")
+    # ---------------------
     
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
+    
+    # ... дальше остальной код ...
 
     # Настройки теперь внутри функции, с правильными отступами
 # Базовые настройки
