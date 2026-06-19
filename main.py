@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__) # Flask по умолчанию ищет шаблоны в папке 'templates'
 
 DOWNLOAD_FOLDER = 'downloads'
 if not os.path.exists(DOWNLOAD_FOLDER):
