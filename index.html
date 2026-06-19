@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Медиа Загрузчик</title>
+    
+    <title>Скачать видео по ссылке онлайн бесплатно — Медиа Загрузчик</title>
+    <meta name="description" content="Удобный сервис позволяет быстро скачать видео по ссылке онлайн. Установить видео из TikTok без водяных знаков, YouTube и VK в высоком качестве MP4 бесплатно.">
+    <meta name="keywords" content="Скачать видео по ссылке, Скачать видио по ссылке, скачать видео по ссылке, скачать видио по ссылке, Установить видео по ссылке, Установить видио по ссылке, установить видео по ссылке, установить видио по ссылке, Видео по ссылке, Видио по ссылке, видео по ссылке, видио по ссылке, скачать видео онлайн, скачать видео с ютуба, скачать видео из тик ток без водяного знака, видео загрузчик, mp4 downloader, скачать видео из вк">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -142,7 +145,7 @@
 
     <div class="container">
         <h1>Медиа Загрузчик</h1>
-        <p class="subtitle">Вставьте ссылку на видео (YouTube, TikTok и др.)</p>
+        <p class="subtitle">Вставьте ссылку на video (YouTube, TikTok и др.)</p>
         
         <div class="input-group">
             <input type="text" id="videoUrl" placeholder="https://www.tiktok.com/...">
@@ -162,23 +165,30 @@
         const modal = document.getElementById('agreementModal');
         let hasAgreed = false;
 
+        // Прямая привязка функций проверки чекбоксов (с таймаутом для мобильных)
         function checkRequirements() {
-            const allChecked = Array.from(checkboxes).every(c => c.checked);
-            if (allChecked) {
-                submitBtn.removeAttribute('disabled');
-                submitBtn.classList.add('active');
-            } else {
-                submitBtn.setAttribute('disabled', 'true');
-                submitBtn.classList.remove('active');
-            }
+            setTimeout(() => {
+                const allChecked = Array.from(checkboxes).every(c => c.checked);
+                if (allChecked) {
+                    submitBtn.removeAttribute('disabled');
+                    submitBtn.classList.add('active');
+                } else {
+                    submitBtn.setAttribute('disabled', 'true');
+                    submitBtn.classList.remove('active');
+                }
+            }, 50);
         }
 
         checkboxes.forEach(chk => {
             chk.addEventListener('change', checkRequirements);
             chk.addEventListener('click', checkRequirements);
+            chk.addEventListener('input', checkRequirements);
         });
 
-        window.addEventListener('DOMContentLoaded', checkRequirements);
+        window.addEventListener('DOMContentLoaded', () => {
+            modal.style.display = 'flex';
+            checkRequirements();
+        });
 
         submitBtn.addEventListener('click', () => {
             if (!submitBtn.hasAttribute('disabled')) {
@@ -214,13 +224,12 @@
                     successBlock.innerText = `Успешно скачано: "${result.title}". Начинается загрузка...`;
                     successBlock.style.display = 'block';
                     
-                    // НОВЫЙ ИСПРАВЛЕННЫЙ МЕТОД ЗАГРУЗКИ (ДЛЯ iOS И ДРУГИХ СИСТЕМ):
                     const fileUrl = `/get-file/${result.file_id}`;
                     const a = document.createElement('a');
                     a.href = fileUrl;
                     a.download = result.file_id; 
                     document.body.appendChild(a);
-                    a.click(); // Эмулируем реальный клик для Safari на iPhone
+                    a.click();
                     document.body.removeChild(a);
                 }
             } catch (err) {
