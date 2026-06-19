@@ -30,22 +30,19 @@ def download_video():
     }
 
     try:
+        # Скачиваем
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
         
-        # Если нужно аудио — конвертируем отдельным процессом
+        # Конвертация
         if download_format == 'audio':
             mp3_filename = os.path.splitext(filename)[0] + '.mp3'
-            # Используем ffmpeg, который установлен через nixpacks
-            subprocess.run(['ffmpeg', '-i', filename, '-vn', '-acodec', 'libmp3lame', '-q:a', '2', mp3_filename], check=True)
+            # Используем полный путь к ffmpeg (обычно в Linux это просто 'ffmpeg')
+            subprocess.run(['ffmpeg', '-i', filename, '-vn', '-acodec', 'libmp3lame', '-q:a', '2', '-y', mp3_filename], check=True)
             filename = mp3_filename
 
-        return jsonify({
-            'success': True, 
-            'file_id': os.path.basename(filename),
-            'title': info.get('title', 'Media')
-        })
+        return jsonify({'success': True, 'file_id': os.path.basename(filename), 'title': info.get('title', 'Media')})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
