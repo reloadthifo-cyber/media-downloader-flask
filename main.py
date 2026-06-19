@@ -2,14 +2,16 @@ import os
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
-app = Flask(__name__) # Flask по умолчанию ищет шаблоны в папке 'templates'
+app = Flask(__name__) # Здесь всё правильно
 
-DOWNLOAD_FOLDER = 'downloads'
-if not os.path.exists(DOWNLOAD_FOLDER):
-    os.makedirs(DOWNLOAD_FOLDER)
+# ВЕРНИ ЭТОТ КУСОК:
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 @app.route('/download', methods=['POST'])
 def download_video():
+    # ... тут твой код ...
     data = request.json
     video_url = data.get('url')
     download_format = data.get('format', 'video')
