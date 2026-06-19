@@ -2,7 +2,6 @@ import os
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
-
 app = Flask(__name__, template_folder='.')
 
 DOWNLOAD_FOLDER = 'downloads'
@@ -22,11 +21,11 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # Базовые настройки
-ydl_opts = {
-    'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-    'ffmpeg_location': 'ffmpeg',
-}
+    # Настройки теперь внутри функции, с правильными отступами
+    ydl_opts = {
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
+        'ffmpeg_location': 'ffmpeg',
+    }
 
     # Настраиваем формат
     if download_format == 'audio':
@@ -62,11 +61,6 @@ def get_file(file_id):
         return send_file(file_path, as_attachment=True)
     return 'Файл не найден', 404
 
-import os
-
-import os
-
 if __name__ == '__main__':
-    # Переменная PORT берется из настроек хостинга, а если её нет (например, на ПК) — ставится 5000
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
