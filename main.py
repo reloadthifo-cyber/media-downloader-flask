@@ -1,4 +1,5 @@
 import os
+import subprocess
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 
@@ -16,26 +17,35 @@ def home():
 def download_video():
     data = request.json
     video_url = data.get('url')
-    
+    download_format = data.get('format', 'video')
+
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-ydl_opts = {
+    ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
         'format': 'best',
-        # Добавь эти строки:
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'noplaylist': True,
     }
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
-            return jsonify({
-                'success': True, 
-                'file_id': os.path.basename(filename),
-                'title': info.get('title', 'Media')
-            })
+        
+        # Если нужно аудио — конвертируем отдельным процессом
+        if download_format == 'audio':
+            mp3_filename = os.path.splitext(filename)[0] + '.mp3'
+            # Используем ffmpeg, который установлен через nixpacks
+            subprocess.run(['ffmpeg', '-i', filename, '-vn', '-acodec', 'libmp3lame', '-q:a', '2', mp3_filename], check=True)
+            filename = mp3_filename
+
+        return jsonify({
+            'success': True, 
+            'file_id': os.path.basename(filename),
+            'title': info.get('title', 'Media')
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
