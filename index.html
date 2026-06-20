@@ -28,7 +28,6 @@
             position: relative;
         }
 
-        /* === НАСТРОЙКА ЛАВА-ФОНА === */
         .lava-bg {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -54,7 +53,6 @@
             100% { transform: translate(0, 0) rotate(360deg); }
         }
 
-        /* === ПЕРВЫЙ ЭКРАН (СТРОГО ПО ВАШЕМУ ТЗ) === */
         .intro-screen {
             min-height: 100vh;
             display: flex;
@@ -68,10 +66,9 @@
             z-index: 5;
         }
 
-        /* Точное название сайта */
         .intro-title {
             font-size: 3.2rem;
-            margin-bottom: 25px; /* Зазор строго между названием и текстом под ним */
+            margin-bottom: 25px;
             font-weight: bold;
             background: linear-gradient(180deg, #ffffff 0%, #4CAF50 100%);
             -webkit-background-clip: text;
@@ -81,7 +78,6 @@
             animation: fadeInUp 1s ease 0.2s forwards;
         }
 
-        /* Точный текст строго под названием сайта */
         .intro-subtext {
             font-size: 1.25rem;
             line-height: 1.6;
@@ -121,7 +117,6 @@
             60% { transform: translateY(-5px); }
         }
 
-        /* === ВТОРОЙ ЭКРАН: ИНТЕРФЕЙС === */
         .main-screen {
             min-height: 100vh;
             display: flex;
@@ -223,7 +218,6 @@
         .error-msg { color: #ff4444; margin-top: 15px; display: none; }
         .success-msg { color: #4CAF50; margin-top: 15px; display: none; }
 
-        /* МОДАЛКА */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -291,7 +285,6 @@
             box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
         }
 
-        /* === БЛОК ПРОВЕРКИ СТАТУСА СЕРВЕРОВ (ПОЛЕЗНО ДЛЯ РСЯ) === */
         .status-tracker-box {
             max-width: 600px;
             width: 90%;
@@ -333,7 +326,6 @@
             box-shadow: 0 0 8px #4CAF50;
         }
 
-        /* ПОЛЕЗНЫЙ SEO-КОНТЕНТ (БЕЗ СОЦСЕТЕЙ-ТРИГГЕРОВ) */
         .seo-advanced-block {
             max-width: 600px;
             width: 90%;
@@ -394,7 +386,6 @@
             z-index: 5;
         }
 
-        /* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ */
         @media (max-width: 580px) {
             .intro-screen { padding-top: 12vh; }
             .intro-title { font-size: 2.1rem; margin-bottom: 20px; }
@@ -454,7 +445,6 @@
 
     <div class="intro-screen">
         <div class="intro-title">Инструмент для установки ваших видео</div>
-        
         <div class="intro-subtext">
             Наш сайт функционирует как независимая диагностическая утилита. Она поможет вам оперативно установить ваши личные медиа-файлы, которые принадлежат вам, но вы не можете воспользоваться быстрой скачкой по прямой ссылке прямиком из источника из-за внутренних сбоев принимающих платформ.
         </div>
@@ -469,7 +459,7 @@
 
     <div class="main-screen" id="downloaderSection">
         <div class="container">
-            <h2 class="shimmer-seo-title">Анализ медиа-пути онлайн</h2>
+            <h2 class="shimmer-seo-title">Укажите ваш URL</h2>
             <p class="subtitle">Вставьте URL-адрес для верификации и экспорта файла</p>
             
             <div class="input-group">
@@ -479,7 +469,7 @@
                 </select>
                 <button class="btn-download" id="downloadBtn">
                     <span class="spinner" id="btnSpinner"></span>
-                    <span id="btnText">Проверить</span>
+                    <span id="btnText">Скачать</span>
                 </button>
             </div>
 
@@ -617,7 +607,7 @@
                 errorBlock.style.display = 'block';
             } finally {
                 spinner.style.display = 'none';
-                btnText.innerText = 'Проверить';
+                btnText.innerText = 'Скачать'; // Возвращаем исходный измененный текст
                 downloadBtn.style.pointerEvents = 'auto';
             }
         });
