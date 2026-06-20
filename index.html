@@ -166,9 +166,27 @@
             width: 90%;
             max-width: 500px;
             margin-bottom: 40px;
-            box-sizing: border-box; /* Защита от вылетов внутренних паддингов */
+            box-sizing: border-box;
         }
-        h1 { color: #4CAF50; margin-bottom: 5px; }
+
+        /* СЕО-ЗАГОЛОВОК С ПЛАВНЫМ ПЕРЕЛИВОМ ЦВЕТА (МЯГКАЯ АНИМАЦИЯ) */
+        .shimmer-seo-title {
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(120deg, #4CAF50, #00bcd4, #4CAF50);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textShimmer 8s linear infinite; /* Нечастое, размеренное переливание */
+        }
+
+        @keyframes textShimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
         p.subtitle { color: #aaaaaa; margin-top: 0; margin-bottom: 25px; }
         
         .input-group {
@@ -185,7 +203,7 @@
             color: #fff;
             outline: none;
             transition: all 0.3s ease;
-            min-width: 0; /* Важно для флексбоксов на мобильных */
+            min-width: 0;
         }
         input[type="text"]:focus {
             border-color: #4CAF50;
@@ -237,7 +255,7 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            padding: 15px; /* Защита, чтобы на мобилках модалка не упиралась в края */
+            padding: 15px;
             box-sizing: border-box;
         }
         .modal-content {
@@ -247,7 +265,7 @@
             padding: 30px;
             border-radius: 12px;
             max-width: 550px;
-            width: 100%; /* Занимает всю ширину overlay с учетом padding */
+            width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
             box-sizing: border-box;
@@ -273,7 +291,7 @@
             margin-top: 3px;
             transform: scale(1.2);
             cursor: pointer;
-            flex-shrink: 0; /* Защищает чекбокс от сжатия */
+            flex-shrink: 0;
         }
         .btn-submit {
             width: 100%;
@@ -355,36 +373,37 @@
             z-index: 5;
         }
 
-        /* ==========================================================================
-           УМНАЯ АДАПТИВНОСТЬ: НАСТРОЙКИ ДЛЯ МОБИЛЬНЫХ ЭКРАНОВ (МЕНЕЕ 580px)
-           ========================================================================== */
+        /* УМНАЯ АДАПТИВНОСТЬ: НАСТРОЙКИ ДЛЯ МОБИЛЬНЫХ ЭКРАНОВ (МЕНЕЕ 580px) */
         @media (max-width: 580px) {
             .intro-title {
-                font-size: 2rem; /* Уменьшаем огромные буквы заголовка на интро */
+                font-size: 2rem;
             }
             .intro-quote {
                 font-size: 1rem;
             }
             .modal-content {
-                padding: 20px 15px; /* Меньше внутренние отступы у модалки */
+                padding: 20px 15px;
             }
             .modal-content h2 {
                 font-size: 17px;
             }
             .agreement-item {
-                font-size: 13px; /* Текст галочек чуть компактнее, чтобы не улетал */
+                font-size: 13px;
                 gap: 10px;
             }
             .input-group {
-                flex-direction: column; /* Разворачиваем инпуты и кнопку в столбик */
+                flex-direction: column;
                 gap: 12px;
             }
             input[type="text"], select, button.btn-download {
-                width: 100%; /* Все элементы растягиваются на 100% ширины «дощечки» */
+                width: 100%;
                 box-sizing: border-box;
             }
             button.btn-download {
-                padding: 14px; /* Делаем кнопку более удобной для тапа пальцем */
+                padding: 14px;
+            }
+            .shimmer-seo-title {
+                font-size: 22px; /* Чуть уменьшаем размер на смартфонах */
             }
         }
     </style>
@@ -447,7 +466,7 @@
 
     <div class="main-screen" id="downloaderSection">
         <div class="container">
-            <h1>Укажите ссылку ниже</h1>
+            <h2 class="shimmer-seo-title">Установите ваше видео по ссылке</h2>
             <p class="subtitle">Вставьте ссылку на video (YouTube, TikTok и др.)</p>
             
             <div class="input-group">
