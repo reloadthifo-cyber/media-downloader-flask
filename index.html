@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>Инструмент для установки ваших video по ссылке онлайн — Скачать медиа-файлы бесплатно</title>
-    <meta name="description" content="Наш сайт поможет вам быстро установить ваши личные медиа-файлы, которые принадлежат вам, прямиком из открытого источника онлайн. Удобная утилита для восстановления личных видио файлов бесплатно.">
-    <meta name="keywords" content="Скачать видео по ссылке, Скачать видио по ссылке, скачать видео по ссылке, скачать видио по ссылке, Установить видео по ссылке, Установить видио по ссылке, установить видео по ссылке, установить видио по ссылке, Видео по ссылке, Видио по ссылке, видео по ссылке, видио по ссылке, скачать видео онлайн, скачать видио онлайн, скачать видео из тик ток без водяного знака, скачать видио из тт, video загрузчик, видио загрузчик, mp4 downloader, скачать видео из вк, скачать видио из вк, утилита для скачки видео, утилита для скачки видио, инструмент для установки видео, инструмент для установки видио">
+    <!-- ОБНОВЛЕННЫЕ МЕТА-ТЕГИ ДЛЯ ИСПРАВЛЕНИЯ ВЫДАЧИ GOOGLE -->
+    <title>Бэкап личных архивов — Установите ваше видео по ссылке онлайн</title>
+    <meta name="description" content="С помощью нашего сервиса вы можете восстановить свою личную медиа и смотреть её сразу с вашего телефона или ПК. Удобный инструмент, чтобы скачать видео по ссылке бесплатно.">
+    <meta name="keywords" content="Скачать видео по ссылке, скачать видео инстаграм, скачать видео из инсты, скачать видео онлайн, скачать видео из тик ток без водяного знака, Установить видео по ссылке, скачать видео из вк, утилита для скачки видео, инструмент для установки видео, бэкап видео">
     <style>
         :root {
             --primary: #4CAF50;
@@ -27,7 +28,7 @@
             position: relative;
         }
 
-        /* === НАСТРОЙКА ЛАВА-ФОНА (ЖИДКИЕ ЧАСТИЦЫ ЗА ФОРМОЙ) === */
+        /* === НАСТРОЙКА ЛАВА-ФОНА === */
         .lava-bg {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -53,42 +54,47 @@
             100% { transform: translate(0, 0) rotate(360deg); }
         }
 
-        /* === ПЕРВЫЙ ЭКРАН С ОБНОВЛЕННОЙ АНИМАЦИЕЙ И ЦВЕТОМ === */
+        /* === ПЕРВЫЙ ЭКРАН (ИСПРАВЛЕННОЕПОЛОЖЕНИЕ И ОТСТУПЫ) === */
         .intro-screen {
             height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start; /* Поднимаем контент выше к топу */
             align-items: center;
             text-align: center;
-            padding: 0 20px;
+            padding: 12vh 20px 0 20px; /* Сдвиг сверху, чтобы убрать пустоту */
             box-sizing: border-box;
             position: relative;
             z-index: 5;
         }
 
-        /* НОВЫЙ ТЕКСТ СВЕРХУ ДЛЯ ЗАПОЛНЕНИЯ ПУСТОТЫ */
+        /* НАПОЛНЕННЫЙ ТЕКСТ СВЕРХУ С SEO-КЛЮЧАМИ */
         .intro-top-text {
-            font-size: 1.1rem;
-            color: #888888;
-            max-width: 600px;
-            margin-bottom: 15px;
-            line-height: 1.5;
+            font-size: 1.15rem;
+            color: #b0b0b5;
+            max-width: 680px;
+            margin-bottom: 45px; /* Задаем четкий промежуток до заголовка */
+            line-height: 1.6;
             opacity: 0;
             animation: fadeInUp 1s ease 0.2s forwards;
         }
+        
+        .intro-top-text strong {
+            color: #4CAF50;
+            font-weight: normal;
+        }
 
-        /* Заголовок совмещает черный и зеленый через градиент */
+        /* Главный анимированный заголовок */
         .intro-title {
             font-size: 3rem;
             margin-bottom: 25px;
             font-weight: bold;
-            background: linear-gradient(180deg, #000000 0%, #4CAF50 100%);
+            background: linear-gradient(180deg, #ffffff 0%, #4CAF50 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 2px 10px rgba(76, 175, 80, 0.15);
             opacity: 0;
-            animation: fadeInUp 1s ease forwards;
+            animation: fadeInUp 1s ease 0.5s forwards; /* Плавный черед появления */
         }
 
         .intro-quote {
@@ -99,25 +105,23 @@
             margin: 0;
         }
 
-        /* Появление строк из прозрачности */
         .intro-quote span {
             display: block;
             opacity: 0;
         }
 
         .intro-quote .line-1 { 
-            animation: fadeInUp 1.2s ease 0.5s forwards; 
+            animation: fadeInUp 1.2s ease 0.8s forwards; 
         }
         
         .intro-quote .line-2 { 
-            animation: fadeInUp 1.2s ease 1.3s forwards; 
+            animation: fadeInUp 1.2s ease 1.5s forwards; 
             font-style: italic; 
             color: #888; 
-            margin-top: 15px; 
+            margin-top: 20px; 
             font-size: 1rem; 
         }
 
-        /* Плавная анимация появления на месте */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -152,7 +156,7 @@
             60% { transform: translateY(-5px); }
         }
 
-        /* === ВТОРОЙ ЭКРАН: ОСНОВНОЙ КОНТЕНТ === */
+        /* === ВТОРОЙ ЭКРАН: ИНТЕРФЕЙС === */
         .main-screen {
             min-height: 100vh;
             display: flex;
@@ -180,7 +184,6 @@
             box-sizing: border-box;
         }
 
-        /* СЕО-ЗАГОЛОВОК С ПЛАВНЫМ ПЕРЕЛИВОМ ЦВЕТА (МЯГКАЯ АНИМАЦИЯ) */
         .shimmer-seo-title {
             margin-top: 0;
             margin-bottom: 5px;
@@ -255,7 +258,7 @@
         .error-msg { color: #ff4444; margin-top: 15px; display: none; }
         .success-msg { color: #4CAF50; margin-top: 15px; display: none; }
 
-        /* ВСПЛЫВАЮЩЕЕ ОКНО (МОДАЛКА) */
+        /* МОДАЛКА */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -323,7 +326,7 @@
             box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
         }
 
-        /* СТИЛИ ДЛЯ ПОИСКОВОГО И СЕМАНТИЧЕСКОГО SEO-БЛОКА */
+        /* SEO БЛОК */
         .seo-advanced-block {
             max-width: 600px;
             width: 90%;
@@ -384,12 +387,15 @@
             z-index: 5;
         }
 
-        /* УМНАЯ АДАПТИВНОСТЬ: НАСТРОЙКИ ДЛЯ МОБИЛЬНЫХ ЭКРАНОВ (МЕНЕЕ 580px) */
+        /* АДАПТИВНОСТЬ ДЛЯ СМАРТФОНОВ */
         @media (max-width: 580px) {
+            .intro-screen {
+                padding-top: 8vh; /* На мобилках поднимаем еще выше */
+            }
             .intro-top-text {
-                font-size: 0.95rem; /* Чуть уменьшаем на телефонах для компактности */
-                margin-bottom: 10px;
-                padding: 0 10px;
+                font-size: 1rem;
+                margin-bottom: 30px; /* Промежуток на мобилках */
+                padding: 0 5px;
             }
             .intro-title {
                 font-size: 2rem;
@@ -397,30 +403,13 @@
             .intro-quote {
                 font-size: 1rem;
             }
-            .modal-content {
-                padding: 20px 15px;
-            }
-            .modal-content h2 {
-                font-size: 17px;
-            }
-            .agreement-item {
-                font-size: 13px;
-                gap: 10px;
-            }
-            .input-group {
-                flex-direction: column;
-                gap: 12px;
-            }
-            input[type="text"], select, button.btn-download {
-                width: 100%;
-                box-sizing: border-box;
-            }
-            button.btn-download {
-                padding: 14px;
-            }
-            .shimmer-seo-title {
-                font-size: 22px;
-            }
+            .modal-content { padding: 20px 15px; }
+            .modal-content h2 { font-size: 17px; }
+            .agreement-item { font-size: 13px; gap: 10px; }
+            .input-group { flex-direction: column; gap: 12px; }
+            input[type="text"], select, button.btn-download { width: 100%; box-sizing: border-box; }
+            button.btn-download { padding: 14px; }
+            .shimmer-seo-title { font-size: 22px; }
         }
     </style>
 </head>
@@ -443,6 +432,7 @@
         <div class="blob"></div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО СОГЛАШЕНИЯ -->
     <div class="modal-overlay" id="agreementModal">
         <div class="modal-content">
             <h2>Пользовательское соглашение и правовые нормы</h2>
@@ -466,8 +456,12 @@
         </div>
     </div>
 
+    <!-- ЭКРАН 1: МОДЕРНИЗИРОВАННЫЙ ИНТРО-БЛОК -->
     <div class="intro-screen">
-        <div class="intro-top-text">С помощью нашего сервиса вы можете восстановить свою личную медиа и смотреть её сразу с вашего телефона или ПК.</div>
+        <!-- Информативный текст с отступом и ключевыми словами для индексации -->
+        <div class="intro-top-text">
+            С помощью нашего удобного веб-сервиса вы всегда можете быстро восстановить свою личную медиа и смотреть её сразу с вашего мобильного телефона или ПК. Наша утилита позволяет мгновенно <strong>скачать видео по ссылке</strong> из открытых источников контента, включая возможность безопасно извлечь и <strong>скачать видео инстаграм</strong> для создания резервных копий ваших проектов.
+        </div>
         
         <div class="intro-title">Бэкап личных архивов</div>
         <p class="intro-quote">
@@ -482,13 +476,14 @@
         </div>
     </div>
 
+    <!-- ЭКРАН 2: ИНТЕРФЕЙС И ДОПОЛНИТЕЛЬНЫЙ SEO-БЛОК -->
     <div class="main-screen" id="downloaderSection">
         <div class="container">
             <h2 class="shimmer-seo-title">Установите ваше видео по ссылке</h2>
-            <p class="subtitle">Вставьте ссылку на video (YouTube, TikTok и др.)</p>
+            <p class="subtitle">Вставьте ссылку на video (YouTube, TikTok, Instagram и др.)</p>
             
             <div class="input-group">
-                <input type="text" id="videoUrl" placeholder="https://www.tiktok.com/...">
+                <input type="text" id="videoUrl" placeholder="https://www.instagram.com/p/...">
                 <select id="videoFormat">
                     <option value="mp4">Видео (MP4)</option>
                 </select>
@@ -504,7 +499,7 @@
 
         <div class="seo-advanced-block">
             <h2>Инструмент для установки ваших видео по ссылке прямиком из первоисточника</h2>
-            <p>Часто авторы сталкиваются с ситуацией, когда оригинальные исходники контента утеряны на локальном накопителе устройства. Наш специализированный веб-сервис функционирует как продвинутый медиа загрузчик, позволяющий в автоматическом режиме извлечь и установить ваши авторские видео файлы обратно. Вы можете безопасно произвести быстрой скачку контента, к которому у вас есть законные права доступа.</p>
+            <p>Часто авторы сталкиваются с ситуацией, когда оригинальные исходники контента утеряны на локальном накопителе устройства. Наш специализированный веб-сервис функционирует как продвинутый медиа загрузчик, позволяющий в автоматическом режиме извлечь и установить ваши авторские видео файлы обратно. Вы можете безопасно произвести быструю скачку контента, к которому у вас есть законные права доступа.</p>
             
             <h3>Как быстро установить видео по ссылке:</h3>
             <ol>
@@ -521,8 +516,8 @@
             </div>
 
             <div class="faq-box">
-                <strong>Поддерживает ли данный видео загрузчик работу с мобильных телефонов?</strong>
-                <p>Да, вы можете легко использовать инструмент для скачки видио как на персональных компьютерах, так и на мобильных смартфонах под управлением любых современных операционных систем прямо через окно вашего веб-браузера.</p>
+                <strong>Можно ли восстановить и скачать видео инстаграм или тикток?</strong>
+                <p>Да, веб-инструмент поддерживает большинство популярных социальных сетей и медиахостингов. Вам достаточно скопировать URL публикации с вашим контентом и запустить процесс восстановления.</p>
             </div>
         </div>
     </div>
@@ -530,7 +525,7 @@
     <footer class="footer-legal">
         <p>&copy; 2026 Инструмент для установки ваших видео по ссылке — Утилита бэкапа медиа-файлов онлайн.</p>
         <p style="max-width: 650px; margin: 10px auto 0 auto; font-style: italic; line-height: 1.4;">
-            Предупреждение для пользователей: Настоящий сервис представляет собой автоматизированное техническое средство обработки открытых URL-адресов. Осуществляя любые действия, пользователь полностью подтверждает, что восстанавливаемые видио и медиа-материалы принадлежат ему по правоу собственности и он берет личную ответственность за соблюдение исключительных авторских прав источников.
+            Предупреждение для пользователей: Настоящий сервис представляет собой автоматизированное техническое средство обработки открытых URL-адресов. Осуществляя любые действия, пользователь полностью подтверждает, что восстанавливаемые видио и медиа-материалы принадлежат ему по праву собственности и он берет личную ответственность за соблюдение исключительных авторских прав источников.
         </p>
     </footer>
 
