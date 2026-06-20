@@ -8,15 +8,12 @@
     <title>Инструмент для установки ваших видео</title>
     <meta name="description" content="Наш сайт функционирует как независимая диагностическая утилита. Она поможет вам оперативно установить ваши личные медиа-файлы, которые принадлежат вам, но вы не можете воспользоваться быстрой скачкой по прямой ссылке прямиком из источника из-за внутренних сбоев принимающих платформ.">
     <meta name="keywords" content="установка видео по ссылке, диагностика медиа ссылок, бэкап личных файлов, сохранить видео онлайн, облачный архив">
-    <!-- Иконка для вкладки браузера (универсальная) -->
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
 
-    <!-- Иконка для устройств Apple (iOS) -->
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
 
-    <!-- Манифест для Android-устройств -->
     <link rel="manifest" href="/static/site.webmanifest">
     
     <style>
@@ -140,6 +137,27 @@
             box-sizing: border-box;
         }
 
+        /* --- СТИЛИ ДЛЯ АДАПТИВНОГО РАЗМЕЩЕНИЯ РЕКЛАМЫ (Объяснение ниже) --- */
+        .main-layout-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 40px;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        .ad-sidebar {
+            width: 160px;
+            height: 600px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 4px;
+        }
+
         .container {
             background: rgba(34, 34, 34, 0.65);
             backdrop-filter: blur(20px);
@@ -149,9 +167,8 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
             text-align: center;
-            width: 90%;
+            width: 100%;
             max-width: 500px;
-            margin-bottom: 40px;
             box-sizing: border-box;
         }
 
@@ -397,6 +414,18 @@
             z-index: 5;
         }
 
+        /* Адаптивность для боковой рекламы */
+        @media (max-width: 992px) {
+            .ad-sidebar {
+                display: none !important;
+            }
+            .main-layout-wrapper {
+                flex-direction: column;
+                align-items: center;
+                gap: 0;
+            }
+        }
+
         @media (max-width: 580px) {
             .intro-screen { padding-top: 12vh; }
             .intro-title { font-size: 2.1rem; margin-bottom: 20px; }
@@ -469,23 +498,43 @@
     </div>
 
     <div class="main-screen" id="downloaderSection">
-        <div class="container">
-            <h2 class="shimmer-seo-title">Укажите ваш URL</h2>
-            <p class="subtitle">Вставьте URL-адрес для верификации и экспорта файла</p>
+        
+        <div class="main-layout-wrapper">
             
-            <div class="input-group">
-                <input type="text" id="videoUrl" placeholder="https://example.com/shared/media-file">
-                <select id="videoFormat">
-                    <option value="mp4">Кодек (MP4)</option>
-                </select>
-                <button class="btn-download" id="downloadBtn">
-                    <span class="spinner" id="btnSpinner"></span>
-                    <span id="btnText">Скачать</span>
-                </button>
+            <div class="ad-sidebar">
+                <script>
+                    atOptions = {
+                        'key' : '676fc42b0ea6c7cdf76b809447268fcf',
+                        'format' : 'iframe',
+                        'height' : 600,
+                        'width' : 160,
+                        'params' : {}
+                    };
+                </script>
+                <script src="https://www.highperformanceformat.com/676fc42b0ea6c7cdf76b809447268fcf/invoke.js"></script>
             </div>
 
-            <div class="error-msg" id="errorBlock"></div>
-            <div class="success-msg" id="successBlock"></div>
+            <div class="container">
+                <h2 class="shimmer-seo-title">Укажите ваш URL</h2>
+                <p class="subtitle">Вставьте URL-адрес для верификации и экспорта файла</p>
+                
+                <div class="input-group">
+                    <input type="text" id="videoUrl" placeholder="https://example.com/shared/media-file">
+                    <select id="videoFormat">
+                        <option value="mp4">Кодек (MP4)</option>
+                    </select>
+                    <button class="btn-download" id="downloadBtn">
+                        <span class="spinner" id="btnSpinner"></span>
+                        <span id="btnText">Скачать</span>
+                    </button>
+                </div>
+
+                <div class="error-msg" id="errorBlock"></div>
+                <div class="success-msg" id="successBlock"></div>
+            </div>
+
+            <div class="ad-sidebar"></div>
+
         </div>
 
         <div class="status-tracker-box">
@@ -515,7 +564,7 @@
             <h3>Часто задаваемые вопросы (FAQ)</h3>
             
             <div class="faq-box">
-                <strong>Безопасно ли использовать данную диагностическую утилиту?</strong>
+                <strong>Безопасно ли использовать данную diagnostic-утилиту?</strong>
                 <p>Да. Сервис выполняет исключительно сквозное сканирование публично доступных линков и предоставляет инструмент для экспорта авторских архивов без изменения кодирования исходного файла.</p>
             </div>
 
@@ -618,7 +667,7 @@
                 errorBlock.style.display = 'block';
             } finally {
                 spinner.style.display = 'none';
-                btnText.innerText = 'Скачать'; // Возвращаем исходный измененный текст
+                btnText.innerText = 'Скачать';
                 downloadBtn.style.pointerEvents = 'auto';
             }
         });
