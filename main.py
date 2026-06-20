@@ -1,6 +1,7 @@
 import os
 import glob
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context
+# Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
+from flask import Flask, render_template, request, jsonify, Response, stream_with_context, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import yt_dlp
@@ -37,6 +38,24 @@ def ratelimit_handler(e):
 @app.route('/')
 def home():
     return render_template('index.html')
+
+
+# ==========================================
+# НОВЫЙ БЛОК: СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
+# ==========================================
+
+@app.route('/sitemap.xml')
+def sitemap():
+    # Отдаем sitemap.xml прямо из корневой папки сайта (BASE_DIR)
+    return send_from_directory(BASE_DIR, 'sitemap.xml', mimetype='application/xml')
+
+@app.route('/robots.txt')
+def robots():
+    # Отдаем robots.txt прямо из корневой папки сайта (BASE_DIR)
+    return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
+
+# ==========================================
+
 
 # Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
 @app.route('/download', methods=['POST'])
