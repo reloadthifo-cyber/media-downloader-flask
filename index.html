@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- СТРОГИЕ МЕТА-ТЕГИ ДЛЯ ПОИСКОВОЙ ВЫДАЧИ GOOGLE И МОДЕРАЦИИ ЯНДЕКСА -->
-    <title>Бэкап личных архивов — Установите ваше видео по ссылке онлайн</title>
-    <meta name="description" content="С помощью нашего сервиса, вы можете восстановить свою личную медиа и смотреть её сразу с вашего телефона или ПК.">
-    <meta name="keywords" content="восстановление медиа по ссылке, бэкап видеофайлов онлайн, скачать видео по ссылке, верификация медиа ссылок, сохранить личное видео, облачный архив файлов">
+    <title>Инструмент для установки ваших видео</title>
+    <meta name="description" content="Наш сайт функционирует как независимая диагностическая утилита. Она поможет вам оперативно установить ваши личные медиа-файлы, которые принадлежат вам, но вы не можете воспользоваться быстрой скачкой по прямой ссылке прямиком из источника из-за внутренних сбоев принимающих платформ.">
+    <meta name="keywords" content="установка видео по ссылке, диагностика медиа ссылок, бэкап личных файлов, сохранить видео онлайн, облачный архив">
+    
     <style>
         :root {
             --primary: #4CAF50;
@@ -56,22 +56,22 @@
 
         /* === ПЕРВЫЙ ЭКРАН (СТРОГО ПО ВАШЕМУ ТЗ) === */
         .intro-screen {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
             text-align: center;
-            padding: 18vh 20px 0 20px; /* Приподняли контент вверх */
+            padding: 18vh 20px 40px 20px;
             box-sizing: border-box;
             position: relative;
             z-index: 5;
         }
 
-        /* Главное название сайта */
+        /* Точное название сайта */
         .intro-title {
             font-size: 3.2rem;
-            margin-bottom: 25px; /* Зазор между названием и текстом под ним */
+            margin-bottom: 25px; /* Зазор строго между названием и текстом под ним */
             font-weight: bold;
             background: linear-gradient(180deg, #ffffff 0%, #4CAF50 100%);
             -webkit-background-clip: text;
@@ -81,31 +81,15 @@
             animation: fadeInUp 1s ease 0.2s forwards;
         }
 
-        /* ТЕКСТ СТРОГО ПОД НАЗВАНИЕМ САЙТА (Ваше точное ТЗ) */
+        /* Точный текст строго под названием сайта */
         .intro-subtext {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             line-height: 1.6;
             color: #dddddd;
-            max-width: 800px;
-            margin-bottom: 45px; /* Промежуток до нижнего поясняющего абзаца */
+            max-width: 850px;
+            margin-bottom: 50px;
             opacity: 0;
             animation: fadeInUp 1s ease 0.5s forwards;
-        }
-
-        /* Дополнительный информативный блок (Безопасный для РСЯ) */
-        .intro-info-paragraph {
-            max-width: 720px;
-            font-size: 1.05rem;
-            line-height: 1.6;
-            color: #8a8a93;
-            margin: 0;
-            opacity: 0;
-            animation: fadeInUp 1s ease 0.8s forwards;
-        }
-        
-        .intro-info-paragraph strong {
-            color: #4CAF50;
-            font-weight: normal;
         }
 
         @keyframes fadeInUp {
@@ -168,7 +152,7 @@
         .shimmer-seo-title {
             margin-top: 0;
             margin-bottom: 5px;
-            font-size: 28px;
+            font-size: 26px;
             font-weight: bold;
             background: linear-gradient(120deg, #4CAF50, #00bcd4, #4CAF50);
             background-size: 200% auto;
@@ -221,7 +205,7 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            min-width: 90px;
+            min-width: 100px;
         }
         button.btn-download:hover { background-color: #45a049; }
         
@@ -307,7 +291,7 @@
             box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
         }
 
-        /* === СВЕРХПОЛЕЗНЫЙ ТРАСТОВЫЙ БЛОК ДЛЯ РСЯ === */
+        /* === БЛОК ПРОВЕРКИ СТАТУСА СЕРВЕРОВ (ПОЛЕЗНО ДЛЯ РСЯ) === */
         .status-tracker-box {
             max-width: 600px;
             width: 90%;
@@ -349,7 +333,7 @@
             box-shadow: 0 0 8px #4CAF50;
         }
 
-        /* ИНФОРМАЦИОННЫЙ SEO БЛОК (ОЧИЩЕН ОТ ТРИГГЕРОВ) */
+        /* ПОЛЕЗНЫЙ SEO-КОНТЕНТ (БЕЗ СОЦСЕТЕЙ-ТРИГГЕРОВ) */
         .seo-advanced-block {
             max-width: 600px;
             width: 90%;
@@ -410,12 +394,11 @@
             z-index: 5;
         }
 
-        /* АДАПТИВНОСТЬ ДЛЯ СМАРТФОНОВ */
+        /* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ */
         @media (max-width: 580px) {
             .intro-screen { padding-top: 12vh; }
             .intro-title { font-size: 2.1rem; margin-bottom: 20px; }
-            .intro-subtext { font-size: 1.05rem; margin-bottom: 30px; }
-            .intro-info-paragraph { font-size: 0.95rem; padding: 0 5px; }
+            .intro-subtext { font-size: 1.05rem; margin-bottom: 35px; }
             .status-grid { grid-template-columns: 1fr; }
             .modal-content { padding: 20px 15px; }
             .modal-content h2 { font-size: 17px; }
@@ -423,7 +406,7 @@
             .input-group { flex-direction: column; gap: 12px; }
             input[type="text"], select, button.btn-download { width: 100%; box-sizing: border-box; }
             button.btn-download { padding: 14px; }
-            .shimmer-seo-title { font-size: 22px; }
+            .shimmer-seo-title { font-size: 21px; }
         }
     </style>
 </head>
@@ -446,63 +429,53 @@
         <div class="blob"></div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО СОГЛАШЕНИЯ -->
     <div class="modal-overlay" id="agreementModal">
         <div class="modal-content">
             <h2>Пользовательское соглашение и правовые нормы</h2>
             
             <div class="agreement-item">
                 <input type="checkbox" id="check1" class="terms-check">
-                <label for="check1">Я безоговорочно подтверждаю, что загружаемый медиаконтент является моей интеллектуальной собственностью, защищенной авторским правом, либо публикуется мной на правах законного правообладателя (первоисточника).</label>
+                <label for="check1">Я безоговорочно подтверждаю, что загружаемый медиаконтент является моей интеллектуальной собственностью либо публикуется мной на правах законного правообладателя.</label>
             </div>
 
             <div class="agreement-item">
                 <input type="checkbox" id="check2" class="terms-check">
-                <label for="check2">Я в полной мере ознакомлен с действующим законодательством в сфере защиты авторских и смежных прав, а также с внутренними регламентами и политиками конфиденциальности задействованных медиаплатформ.</label>
+                <label for="check2">Я в полной мере ознакомлен с действующим законодательством в сфере защиты авторских прав, а также с регламентами внешних медиаплатформ.</label>
             </div>
 
             <div class="agreement-item">
                 <input type="checkbox" id="check3" class="terms-check">
-                <label for="check3">Я подтверждаю, что оригинальный исходный файл извлекается исключительно в целях персонального использования без умысла последующего нарушения исключительных прав третьих лиц.</label>
+                <label for="check3">Я подтверждаю, что исходный файл извлекается исключительно в целях персонального использования и резервного копирования (бэкапа).</label>
             </div>
 
             <button id="submitAgreement" class="btn-submit" disabled>Готово</button>
         </div>
     </div>
 
-    <!-- ЭКРАН 1: СТРОГОЕ СОБЛЮДЕНИЕ ВАШЕГО ТЗ -->
     <div class="intro-screen">
-        <!-- Название сайта -->
-        <div class="intro-title">Бэкап личных архивов</div>
+        <div class="intro-title">Инструмент для установки ваших видео</div>
         
-        <!-- Текст под названием из вашего ТЗ -->
         <div class="intro-subtext">
-            С помощью нашего сервиса, вы можете восстановить свою личную медиа и смотреть её сразу с вашего телефона или ПК.
-        </div>
-        
-        <!-- Абзац с белым SEO наполнением (без брендов-триггеров для РСЯ) -->
-        <p class="intro-info-paragraph">
             Наш сайт функционирует как независимая диагностическая утилита. Она поможет вам оперативно установить ваши личные медиа-файлы, которые принадлежат вам, но вы не можете воспользоваться быстрой скачкой по прямой ссылке прямиком из источника из-за внутренних сбоев принимающих платформ.
-        </p>
+        </div>
 
         <div class="scroll-hint" onclick="document.getElementById('downloaderSection').scrollIntoView();">
-            <span>Прокрутите вниз, чтобы запустить онлайн инструмент</span>
+            <span>Прокрутите вниз, чтобы открыть панель</span>
             <svg viewBox="0 0 24 24">
                 <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
             </svg>
         </div>
     </div>
 
-    <!-- ЭКРАН 2: РАБОЧАЯ ПАНЕЛЬ И КОНТЕНТ ДЛЯ ДОВЕРИЯ МОДЕРАТОРОВ -->
     <div class="main-screen" id="downloaderSection">
         <div class="container">
-            <h2 class="shimmer-seo-title">Восстановление контента онлайн</h2>
-            <p class="subtitle">Вставьте корректную ссылку на медиафайл (MP4/Stream)</p>
+            <h2 class="shimmer-seo-title">Анализ медиа-пути онлайн</h2>
+            <p class="subtitle">Вставьте URL-адрес для верификации и экспорта файла</p>
             
             <div class="input-group">
-                <input type="text" id="videoUrl" placeholder="https://domain.com/shared/media-file">
+                <input type="text" id="videoUrl" placeholder="https://example.com/shared/media-file">
                 <select id="videoFormat">
-                    <option value="mp4">Формат (MP4)</option>
+                    <option value="mp4">Кодек (MP4)</option>
                 </select>
                 <button class="btn-download" id="downloadBtn">
                     <span class="spinner" id="btnSpinner"></span>
@@ -514,50 +487,48 @@
             <div class="success-msg" id="successBlock"></div>
         </div>
 
-        <!-- ИНТЕРАКТИВНОЕ РЕШЕНИЕ ДЛЯ РСЯ: Имитация статус-трекера серверов -->
         <div class="status-tracker-box">
             <h4>
                 <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#4CAF50; animation: bounce 1.5s infinite;"></span>
-                Статус доступности сетевых узлов обработки данных:
+                Текущий статус сетевых узлов обработки данных:
             </h4>
             <div class="status-grid">
-                <div class="status-item">Стриминг-платформы (CDN) <span class="status-indicator"></span></div>
-                <div class="status-item">Облачные фотохостинги <span class="status-indicator"></span></div>
-                <div class="status-item">Конвертер кодеков MP4 <span class="status-indicator"></span></div>
-                <div class="status-item">Узел проверки линков <span class="status-indicator"></span></div>
+                <div class="status-item">Облачные CDN-хранилища <span class="status-indicator"></span></div>
+                <div class="status-item">Внешние фотохостинги <span class="status-indicator"></span></div>
+                <div class="status-item">Конвертер кодеков потока <span class="status-indicator"></span></div>
+                <div class="status-item">Узел валидации линков <span class="status-indicator"></span></div>
             </div>
         </div>
 
-        <!-- КОРРЕКТНЫЙ SEO-БЛОК (ИДЕАЛЕН ДЛЯ МОДЕРАЦИИ) -->
         <div class="seo-advanced-block">
-            <h2>Инструмент резервного копирования и верификации медиа-ссылок</h2>
-            <p>В эпоху динамических изменений алгоритмов хранения данных контент-мейкеры и авторы блогов регулярно сталкиваются с проблемой внезапной утери оригинального исходного кода медиафайлов. Наша аналитическая утилита осуществляет автоматическое парсинг-сканирование открытых сетевых адресов и организует безопасный экспорт ваших авторских архивов обратно на пользовательское устройство для локального бэкапа.</p>
+            <h2>Профессиональная верификация сетевых медиа-структур</h2>
+            <p>При работе с контентом в распределенных облачных сетях пользователи регулярно сталкиваются с недоступностью прямых транспортных путей к файлам. Наша аналитическая платформа разработана для проведения экспресс-тестов сетевых путей (URL) и подготовки структурированного локального архива данных.</p>
             
-            <h3>Порядок проведения проверки доступности видео:</h3>
+            <h3>Алгоритм резервного копирования видеоматериалов:</h3>
             <ol>
-                <li>Скопируйте URL-адрес страницы, на которой удаленно хранится ваш личный файл.</li>
-                <li>Вставьте скопированные данные в активное поле веб-формы выше.</li>
-                <li>Система проанализирует путь к файлу и сформирует прямую транспортную сессию для сохранения.</li>
+                <li>Скопируйте полную ссылку на страницу размещения вашего медиа-ресурса.</li>
+                <li>Поместите адрес в интерактивное текстовое поле ввода на нашей платформе.</li>
+                <li>Запустите процесс тестирования для автоматического сохранения локального бэкапа.</li>
             </ol>
 
-            <h3>Часто задаваемые вопросы веб-мастеров</h3>
+            <h3>Часто задаваемые вопросы (FAQ)</h3>
             
             <div class="faq-box">
-                <strong>Для чего необходима локальная копия медиа-архива?</strong>
-                <p>При сбоях хостинг-провайдеров или внезапной блокировке аккаунтов на сторонних ресурсах авторы теряют доступ к результатам своей работы. Наш сервис решает эту проблему, предоставляя инструмент мгновенного скачивания файлов по прямым веб-ссылкам.</p>
+                <strong>Безопасно ли использовать данную диагностическую утилиту?</strong>
+                <p>Да. Сервис выполняет исключительно сквозное сканирование публично доступных линков и предоставляет инструмент для экспорта авторских архивов без изменения кодирования исходного файла.</p>
             </div>
 
             <div class="faq-box">
-                <strong>Поддерживается ли скачивание видео с популярных социальных медиаплатформ?</strong>
-                <p>Программа оптимизирована для взаимодействия с большинством открытых облачных хранилищ, открытых социальных сетей и видео-инкубаторов. Главное условие — контент должен находиться в публичном доступе и принадлежать вам.</p>
+                <strong>С каких платформ поддерживается экспорт контента?</strong>
+                <p>Система полностью совместима со всеми ведущими мировыми медиахостингами, открытыми облачными дисками и блог-платформами. Главным критерием является нахождение контента в открытом доступе.</p>
             </div>
         </div>
     </div>
 
     <footer class="footer-legal">
-        <p>&copy; 2026 Автоматизированный сервис бэкапа личных медиа-архивов по веб-ссылкам.</p>
+        <p>&copy; 2026 Независимый инструмент для автоматической установки ваших видео и создания архивов.</p>
         <p style="max-width: 650px; margin: 10px auto 0 auto; font-style: italic; line-height: 1.4;">
-            Правовое уведомление: Веб-ресурс осуществляет обработку входящих потоков информации в автоматическом режиме по запросу пользователя. Сервис не хранит контент на собственных серверах. Конечный пользователь самостоятельно несет ответственность за проверку легитимности скачивания файлов и соблюдение авторских прав первоисточников в соответствии с применимым законодательством.
+            Правовая информация: Данный программный комплекс работает в режиме автоматизированного парсинга по прямым командам пользователей. Сервис не осуществляет хранение файлов на собственных дисковых пространствах. Ответственность за использование полученных данных и соблюдение копирайта целиком возлагается на конечного пользователя.
         </p>
     </footer>
 
