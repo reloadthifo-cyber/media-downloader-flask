@@ -73,19 +73,20 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-  ydl_opts = {
-    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-    'noplaylist': True,
-    # Активируем встроенный плагин авторизации
-    'username': 'oauth2',
-    'password': '', 
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['android', 'web'],
+def download_video(url):
+    # Перед каждой строчкой внутри функции должно быть строго по 4 или 8 пробелов!
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'noplaylist': True,
+        'username': 'oauth2',
+        'password': '', 
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+            }
         }
     }
-}
-
+    # Дальше идет твой код вызова yt_dlp...
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
