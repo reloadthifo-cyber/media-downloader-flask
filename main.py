@@ -46,12 +46,6 @@ def robots():
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 # ==========================================
 
-# Функция точного поиска ID видео
-def extract_youtube_id(url):
-    pattern = r'(?:https?://)?(?:www\.)?(?:youtube\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)|shorts/|watch\?.*v=)|youtu\.be/)([^"&?/\s]{11})'
-    match = re.search(pattern, url)
-    return match.group(1) if match else None
-
 @app.route('/download', methods=['POST'])
 @limiter.limit("5 per minute; 60 per hour") 
 def download_video():
@@ -65,56 +59,73 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # 1. Извлекаем ID с помощью регулярного выражения (поддерживает Shorts на 100%)
-    video_id = extract_youtube_id(video_url)
-    if not video_id:
-        return jsonify({'success': False, 'error': 'Не удалось распознать ссылку на видео. Проверьте формат.'}), 400
+    # Используем проверенный и отказоустойчивый шлюз Cobalt API
+    # Он развернут на независимых серверах и мгновенно переваривает Shorts и обычный YouTube
+    api_url = "https://api.cobalt.tools/api/json"
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "url": video_url,
+        "videoQuality": "720", # Оптимальное качество для быстрой отдачи
+        "audioFormat": "mp3",
+        "isNoTTWatermark": True
+    }
 
-    # 2. Обновленный список активных и стабильных инстансов API Invidious
-    invidious_instances = [
-        "https://invidious.io.lol",
-        "https://yewtu.be",
-        "https://inv.tux.pizza",
-        "https://invidious.nerdvpn.de",
-        "https://iv.melmac.space",
-        "https://invidious.perennialte.ch",
-        "https://yt.artemislena.eu",
-        "https://invidious.flokinet.to"
-    ]
-    
-    direct_download_url = None
-    video_title = "Media"
-
-    # 3. Перебираем инстансы в поиске рабочего потока
-    for instance in invidious_instances:
-        try:
-            api_url = f"{instance}/api/v1/videos/{video_id}"
-            response = requests.get(api_url, timeout=4)
+    try:
+        # Отправляем запрос к шлюзу
+        response = requests.post(api_url, json=payload, headers=headers, timeout=8)
+        
+        if response.status_code == 200:
+            res_data = response.json()
+            status = res_data.get("status")
             
-            if response.status_code == 200:
-                res_data = response.json()
-                video_title = res_data.get('title', 'Media')
-                format_streams = res_data.get('formatStreams', [])
+            # Если шлюз успешно сгенерировал прямую ссылку
+            if status == "stream" or status == "redirect":
+                direct_download_url = res_data.get("url")
+                video_title = "YouTube Video"  # Шлюз отдает чистый поток
                 
-                if format_streams:
-                    # Выбираем стабильный поток (обычно последний в списке — наилучший со звуком)
-                    direct_download_url = format_streams[-1].get('url')
-                    if direct_download_url:
-                        break
-        except Exception:
-            continue
+                return jsonify({
+                    'success': True, 
+                    'download_url': direct_download_url, 
+                    'title': video_title
+                })
+            
+            elif status == "picker":
+                # Если видео содержит несколько потоков, берем первый доступный
+                picker_items = res_data.get("picker", [])
+                if picker_items:
+                    direct_download_url = picker_items[0].get("url")
+                    return jsonify({
+                        'success': True, 
+                        'download_url': direct_download_url, 
+                        'title': "YouTube Video"
+                    })
 
-    # 4. Возвращаем результат
-    if direct_download_url:
-        return jsonify({
-            'success': True, 
-            'download_url': direct_download_url, 
-            'title': video_title
-        })
-    else:
+        # Если основной эндпоинт вернул ошибку, пробуем запасное зеркало шлюза
+        fallback_url = "https://co.wuk.sh/api/json"
+        response = requests.post(fallback_url, json=payload, headers=headers, timeout=8)
+        if response.status_code == 200:
+            res_data = response.json()
+            direct_download_url = res_data.get("url")
+            if direct_download_url:
+                return jsonify({
+                    'success': True, 
+                    'download_url': direct_download_url, 
+                    'title': "YouTube Video"
+                })
+
         return jsonify({
             'success': False, 
-            'error': 'Все узлы обработки перегружены. Пожалуйста, попробуйте еще раз через минуту или с другим видео.'
+            'error': 'Выбранное видео временно недоступно для обработки. Попробуйте другую ссылку.'
+        }), 500
+
+    except Exception as e:
+        print(f"Ошибка внешнего API: {str(e)}")
+        return jsonify({
+            'success': False, 
+            'error': 'Произошла ошибка при согласовании потока. Повторите попытку позже.'
         }), 500
 
 @app.route('/get-file/<file_id>')
