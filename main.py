@@ -1,5 +1,6 @@
 import os
 import glob
+import uuid  # Добавили генератор уникальных безопасных имён
 from flask import Flask, render_template, request, jsonify, Response, stream_with_context, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -13,7 +14,7 @@ app = Flask(
     static_folder=BASE_DIR
 )
 
-# НАСТРОЙКА ЗАЩИТЫ ОТ DDOS / ФЛУДА
+# НАСТРОЙКА ЗАЩИТЫ ОТ DDOS
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -29,17 +30,12 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 def ratelimit_handler(e):
     return jsonify({
         'success': False, 
-        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим скачиванием.'
+        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим действием.'
     }), 429
 
 @app.route('/')
 def home():
     return render_template('index.html')
-
-
-# ==========================================
-# СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
-# ==========================================
 
 @app.route('/sitemap.xml')
 def sitemap():
@@ -49,35 +45,30 @@ def sitemap():
 def robots():
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 
-# ==========================================
-
 
 @app.route('/download', methods=['POST'])
 @limiter.limit("3 per minute; 30 per hour") 
 def download_video():
     data = request.json or {}
     video_url = data.get('url')
-
-    # ПРОВЕРКА СОГЛАСИЯ
     agreed = data.get('agreed')
+    
     if not agreed:
         return jsonify({'success': False, 'error': 'Вы должны согласиться с условиями'}), 400
 
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # Опции yt-dlp, которые успешно скачивали TikTok и Shorts на диск
+    # Генерируем случайное безопасное имя без пробелов и решёток
+    unique_id = str(uuid.uuid4())
+    
     ydl_opts = {
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+        # Сохраняем строго под уникальным безопасным ID
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'{unique_id}.%(ext)s'),
         'noplaylist': True,
         'quiet': True,
-        'max_filesize': 367001600,  # Ограничение 350 МБ
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'web'],
-            }
-        }
+        'max_filesize': 367001600
     }
 
     try:
@@ -85,27 +76,36 @@ def download_video():
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
 
+        # Если yt-dlp изменил расширение (например, на .mkv или .webm)
         if not os.path.exists(filename):
-            base_path = os.path.splitext(filename)[0]
-            found = glob.glob(base_path + '.*')
+            found = glob.glob(os.path.join(DOWNLOAD_FOLDER, f'{unique_id}.*'))
             if found: 
                 filename = found[0]
+            else:
+                return jsonify({'success': False, 'error': 'Файл не найден после скачивания'}), 500
+
+        # Сохраняем оригинальное название видео в сессию или передаем безопасную строку
+        safe_title = info.get('title', 'Media')
+        # Убираем символы, ломающие http-заголовки
+        safe_title = "".join([c for c in safe_title if c.isalpha() or c.isdigit() or c in ' .-_']).strip()
 
         return jsonify({
             'success': True, 
             'file_id': os.path.basename(filename), 
-            'title': info.get('title', 'Media')
+            'title': safe_title if safe_title else 'video'
         })
+        
     except Exception as e:
         if 'File is larger than max-filesize' in str(e):
             return jsonify({'success': False, 'error': 'Файл слишком большой. Лимит сервера: 350 МБ.'}), 400
-        print(f"Ошибка скачивания: {str(e)}")
-        return jsonify({'success': False, 'error': 'Не удалось получить ссылку для скачивания. Пожалуйста, попробуйте другую ссылку или повторите позже.'}), 500
+        print(f"Ошибка парсинга: {str(e)}")
+        return jsonify({'success': False, 'error': 'Не удалось обработать медиафайл. Попробуйте еще раз.'}), 500
 
 
-# Функция отдачи файла кусочками и его гарантированного удаления с сервера
 @app.route('/get-file/<file_id>')
 def get_file(file_id):
+    # Защита от Path Traversal (чтобы через /.. не угнали системные файлы)
+    file_id = os.path.basename(file_id)
     file_path = os.path.join(DOWNLOAD_FOLDER, file_id)
 
     if os.path.exists(file_path):
@@ -125,11 +125,11 @@ def get_file(file_id):
             stream_with_context(generate()),
             mimetype='application/octet-stream'
         )
+        # Отдаем файл браузеру с корректным принудительным скачиванием
         response.headers["Content-Disposition"] = f"attachment; filename={file_id}"
         return response
 
-    return 'Файл не найден', 404
-
+    return 'Файл не найден или уже был скачан', 404
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
