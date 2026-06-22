@@ -81,11 +81,14 @@ def download_video():
         return jsonify({'success': False, 'error': 'Некорректный ID видео'}), 400
 
     # 2. Список стабильных публичных инстансов Invidious API
+    # (Добавлены дополнительные рабочие узлы на случай высокой нагрузки)
     invidious_instances = [
         "https://invidious.io.lol",
         "https://yewtu.be",
         "https://vid.puffyan.us",
-        "https://inv.tux.pizza"
+        "https://inv.tux.pizza",
+        "https://invidious.nerdvpn.de",
+        "https://invidious.flokinet.to"
     ]
     
     direct_download_url = None
@@ -124,7 +127,7 @@ def download_video():
 
 
 # Роут /get-file больше не нужен, так как файлы на сервере больше не хранятся!
-# Но оставляем заглушку, чтобы старый фронтенд (если он закеширован) не падал с 500 ошибкой.
+# Но оставляем заглушку, чтобы старый фронтенд (если он закеширован) не падал с 404 ошибкой.
 @app.route('/get-file/<file_id>')
 def get_file(file_id):
     return 'Этот метод устарел, скачивание теперь прямое.', 410
