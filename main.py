@@ -66,9 +66,12 @@ def download_video():
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
     # 1. Извлекаем ID видео из ссылки YouTube
+  # 1. Извлекаем ID видео из ссылки YouTube
     video_id = None
     try:
-        if "v=" in video_url:
+        if "shorts/" in video_url:
+            video_id = video_url.split("shorts/")[-1].split("?")[0].split("&")[0]
+        elif "v=" in video_url:
             video_id = video_url.split("v=")[-1].split("&")[0]
         elif "youtu.be/" in video_url:
             video_id = video_url.split("youtu.be/")[-1].split("?")[0]
@@ -76,9 +79,6 @@ def download_video():
             video_id = video_url.split("/")[-1].split("?")[0]
     except Exception:
         return jsonify({'success': False, 'error': 'Не удалось распознать ссылку на видео'}), 400
-
-    if not video_id:
-        return jsonify({'success': False, 'error': 'Некорректный ID видео'}), 400
 
     # 2. Список стабильных публичных инстансов Invidious API
     # (Добавлены дополнительные рабочие узлы на случай высокой нагрузки)
