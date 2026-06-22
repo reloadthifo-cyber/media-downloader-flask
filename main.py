@@ -1,6 +1,5 @@
 import os
 import glob
-# Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
 from flask import Flask, render_template, request, jsonify, Response, stream_with_context, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -19,8 +18,8 @@ app = Flask(
 limiter = Limiter(
     get_remote_address,               # Определяем пользователя по его IP-адресу
     app=app,
-    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим (чтобы не блочить обычных людей)
-    storage_uri="memory://"           # Храним данные в оперативной памяти (для 1 сервера этого за глаза)
+    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим
+    storage_uri="memory://"           # Храним данные в оперативной памяти
 )
 
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
@@ -41,34 +40,33 @@ def home():
 
 
 # ==========================================
-# НОВЫЙ БЛОК: СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
+# СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
 # ==========================================
 
 @app.route('/sitemap.xml')
 def sitemap():
-    # Отдаем sitemap.xml прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'sitemap.xml', mimetype='application/xml')
 
 @app.route('/robots.txt')
 def robots():
-    # Отдаем robots.txt прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 
 # ==========================================
 
 
-# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
-# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
+# Ограничиваем: максимум 3 скачивания в минуту и 30 в час с одного IP
 @app.route('/download', methods=['POST'])
 @limiter.limit("3 per minute; 30 per hour") 
-    
+def download():
+    # Получаем URL из POST-запроса (в зависимости от того, как отправляете: json или form)
+    data = request.get_json() or request.form
+    video_url = data.get('url') if data else None
+
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-ydl_opts = {
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-        # Просим чистый оригинал без рендеринга водяного знака
         'format': 'bestvideo+bestaudio/best', 
         'noplaylist': True,
         'max_filesize': 350 * 1024 * 1024,
