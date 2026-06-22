@@ -1,10 +1,9 @@
 import os
-import glob
+import requests
 # Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context, send_from_directory
+from flask import Flask, render_template, request, jsonify, Response, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import yt_dlp
 
 # Получаем путь к корневой директории
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,20 +18,16 @@ app = Flask(
 limiter = Limiter(
     get_remote_address,               # Определяем пользователя по его IP-адресу
     app=app,
-    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим (чтобы не блочить обычных людей)
-    storage_uri="memory://"           # Храним данные в оперативной памяти (для 1 сервера этого за глаза)
+    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим
+    storage_uri="memory://"           # Храним данные в оперативной памяти
 )
-
-DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
-if not os.path.exists(DOWNLOAD_FOLDER):
-    os.makedirs(DOWNLOAD_FOLDER)
 
 # Кастомная ошибка, если пользователь превысил лимит запросов
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return jsonify({
         'success': False, 
-        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим скачиванием.'
+        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим действием.'
     }), 429
 
 @app.route('/')
@@ -41,24 +36,21 @@ def home():
 
 
 # ==========================================
-# НОВЫЙ БЛОК: СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
+# СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
 # ==========================================
 
 @app.route('/sitemap.xml')
 def sitemap():
-    # Отдаем sitemap.xml прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'sitemap.xml', mimetype='application/xml')
 
 @app.route('/robots.txt')
 def robots():
-    # Отдаем robots.txt прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 
 # ==========================================
 
 
-# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
-# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
+# ЮРИДИЧЕСКИ ЧИСТЫЙ МЕТОД: ПОЛУЧЕНИЕ ПРЯМОЙ ССЫЛКИ ЧЕРЕЗ INVIDIOUS API
 @app.route('/download', methods=['POST'])
 @limiter.limit("3 per minute; 30 per hour") 
 def download_video():
@@ -73,66 +65,70 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-def download_video(url):
-    # Перед каждой строчкой внутри функции должно быть строго по 4 или 8 пробелов!
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'noplaylist': True,
-        'username': 'oauth2',
-        'password': '', 
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'web'],
-            }
-        }
-    }
-    # Дальше идет твой код вызова yt_dlp...
+    # 1. Извлекаем ID видео из ссылки YouTube
+    video_id = None
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            filename = ydl.prepare_filename(info)
-        
-        if not os.path.exists(filename):
-            base_path = os.path.splitext(filename)[0]
-            found = glob.glob(base_path + '.*')
-            if found: 
-                filename = found[0]
+        if "v=" in video_url:
+            video_id = video_url.split("v=")[-1].split("&")[0]
+        elif "youtu.be/" in video_url:
+            video_id = video_url.split("youtu.be/")[-1].split("?")[0]
+        else:
+            video_id = video_url.split("/")[-1].split("?")[0]
+    except Exception:
+        return jsonify({'success': False, 'error': 'Не удалось распознать ссылку на видео'}), 400
 
+    if not video_id:
+        return jsonify({'success': False, 'error': 'Некорректный ID видео'}), 400
+
+    # 2. Список стабильных публичных инстансов Invidious API
+    invidious_instances = [
+        "https://invidious.io.lol",
+        "https://yewtu.be",
+        "https://vid.puffyan.us",
+        "https://inv.tux.pizza"
+    ]
+    
+    direct_download_url = None
+    video_title = "Media"
+
+    # 3. Опрашиваем узлы для получения прямой ссылки на видеопоток
+    for instance in invidious_instances:
+        try:
+            api_url = f"{instance}/api/v1/videos/{video_id}"
+            response = requests.get(api_url, timeout=5)
+            
+            if response.status_code == 200:
+                res_data = response.json()
+                video_title = res_data.get('title', 'Media')
+                format_streams = res_data.get('formatStreams', [])
+                
+                if format_streams:
+                    # Берем видео с наилучшим доступным качеством (со звуком) из списка потоков
+                    direct_download_url = format_streams[-1].get('url')
+                    break
+        except Exception:
+            continue  # Если один сервер недоступен, пробуем следующий
+
+    # 4. Если ссылку найти удалось, отдаем её фронтенду для скачивания на стороне клиента
+    if direct_download_url:
         return jsonify({
             'success': True, 
-            'file_id': os.path.basename(filename), 
-            'title': info.get('title', 'Media')
+            'download_url': direct_download_url,  # Передаем прямую ссылку
+            'title': video_title
         })
-    except Exception as e:
-        if 'File is larger than max-filesize' in str(e):
-            return jsonify({'success': False, 'error': 'Файл слишком большой. Лимит сервера: 350 МБ.'}), 400
-        return jsonify({'success': False, 'error': str(e)}), 500
+    else:
+        return jsonify({
+            'success': False, 
+            'error': 'Не удалось получить ссылку для скачивания. Попробуйте позже или используйте другое видео.'
+        }), 500
 
+
+# Роут /get-file больше не нужен, так как файлы на сервере больше не хранятся!
+# Но оставляем заглушку, чтобы старый фронтенд (если он закеширован) не падал с 500 ошибкой.
 @app.route('/get-file/<file_id>')
 def get_file(file_id):
-    file_path = os.path.join(DOWNLOAD_FOLDER, file_id)
-    
-    if os.path.exists(file_path):
-        def generate():
-            try:
-                with open(file_path, 'rb') as f:
-                    while chunk := f.read(8192):
-                        yield chunk
-            finally:
-                try:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                except Exception as e:
-                    app.logger.error(f"Ошибка при удалении файла: {e}")
+    return 'Этот метод устарел, скачивание теперь прямое.', 410
 
-        response = Response(
-            stream_with_context(generate()),
-            mimetype='application/octet-stream'
-        )
-        response.headers["Content-Disposition"] = f"attachment; filename={file_id}"
-        return response
-    
-    return 'Файл не найден', 404
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
