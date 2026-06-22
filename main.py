@@ -1,11 +1,12 @@
 import os
 import glob
-import uuid  # Добавили генератор уникальных безопасных имён
+# Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
 from flask import Flask, render_template, request, jsonify, Response, stream_with_context, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import yt_dlp
 
+# Получаем путь к корневой директории
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(
@@ -14,61 +15,63 @@ app = Flask(
     static_folder=BASE_DIR
 )
 
-# НАСТРОЙКА ЗАЩИТЫ ОТ DDOS
+# НАСТРОЙКА ЗАЩИТЫ ОТ DDOS / ФЛУДА
 limiter = Limiter(
-    get_remote_address,
+    get_remote_address,               # Определяем пользователя по его IP-адресу
     app=app,
-    default_limits=[],
-    storage_uri="memory://"
+    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим (чтобы не блочить обычных людей)
+    storage_uri="memory://"           # Храним данные в оперативной памяти (для 1 сервера этого за глаза)
 )
 
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
+# Кастомная ошибка, если пользователь превысил лимит запросов
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return jsonify({
         'success': False, 
-        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим действием.'
+        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим скачиванием.'
     }), 429
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
+
+# ==========================================
+# НОВЫЙ БЛОК: СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
+# ==========================================
+
 @app.route('/sitemap.xml')
 def sitemap():
+    # Отдаем sitemap.xml прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'sitemap.xml', mimetype='application/xml')
 
 @app.route('/robots.txt')
 def robots():
+    # Отдаем robots.txt прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 
+# ==========================================
 
+
+# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
+# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
 @app.route('/download', methods=['POST'])
 @limiter.limit("3 per minute; 30 per hour") 
-def download_video():
-    data = request.json or {}
-    video_url = data.get('url')
-    agreed = data.get('agreed')
-    
-    if not agreed:
-        return jsonify({'success': False, 'error': 'Вы должны согласиться с условиями'}), 400
-
+@@ -72,60 +73,61 @@
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # Генерируем случайное безопасное имя без пробелов и решёток
-    unique_id = str(uuid.uuid4())
-    
+ydl_opts = {
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        # Сохраняем строго под уникальным безопасным ID
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'{unique_id}.%(ext)s'),
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
+        # Просим чистый оригинал без рендеринга водяного знака
+        'format': 'bestvideo+bestaudio/best', 
         'noplaylist': True,
-        'quiet': True,
-        'max_filesize': 367001600
+        'max_filesize': 350 * 1024 * 1024,
     }
 
     try:
@@ -76,36 +79,24 @@ def download_video():
             info = ydl.extract_info(video_url, download=True)
             filename = ydl.prepare_filename(info)
 
-        # Если yt-dlp изменил расширение (например, на .mkv или .webm)
         if not os.path.exists(filename):
-            found = glob.glob(os.path.join(DOWNLOAD_FOLDER, f'{unique_id}.*'))
+            base_path = os.path.splitext(filename)[0]
+            found = glob.glob(base_path + '.*')
             if found: 
                 filename = found[0]
-            else:
-                return jsonify({'success': False, 'error': 'Файл не найден после скачивания'}), 500
-
-        # Сохраняем оригинальное название видео в сессию или передаем безопасную строку
-        safe_title = info.get('title', 'Media')
-        # Убираем символы, ломающие http-заголовки
-        safe_title = "".join([c for c in safe_title if c.isalpha() or c.isdigit() or c in ' .-_']).strip()
 
         return jsonify({
             'success': True, 
             'file_id': os.path.basename(filename), 
-            'title': safe_title if safe_title else 'video'
+            'title': info.get('title', 'Media')
         })
-        
     except Exception as e:
         if 'File is larger than max-filesize' in str(e):
             return jsonify({'success': False, 'error': 'Файл слишком большой. Лимит сервера: 350 МБ.'}), 400
-        print(f"Ошибка парсинга: {str(e)}")
-        return jsonify({'success': False, 'error': 'Не удалось обработать медиафайл. Попробуйте еще раз.'}), 500
-
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/get-file/<file_id>')
 def get_file(file_id):
-    # Защита от Path Traversal (чтобы через /.. не угнали системные файлы)
-    file_id = os.path.basename(file_id)
     file_path = os.path.join(DOWNLOAD_FOLDER, file_id)
 
     if os.path.exists(file_path):
@@ -125,11 +116,10 @@ def get_file(file_id):
             stream_with_context(generate()),
             mimetype='application/octet-stream'
         )
-        # Отдаем файл браузеру с корректным принудительным скачиванием
         response.headers["Content-Disposition"] = f"attachment; filename={file_id}"
         return response
 
-    return 'Файл не найден или уже был скачан', 404
+    return 'Файл не найден', 404
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
