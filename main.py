@@ -82,13 +82,17 @@ def download_video():
 
     # 2. Список стабильных публичных инстансов Invidious API
     # (Добавлены дополнительные рабочие узлы на случай высокой нагрузки)
+   # 2. Список стабильных публичных инстансов Invidious API
     invidious_instances = [
         "https://invidious.io.lol",
         "https://yewtu.be",
         "https://vid.puffyan.us",
         "https://inv.tux.pizza",
         "https://invidious.nerdvpn.de",
-        "https://invidious.flokinet.to"
+        "https://invidious.flokinet.to",
+        "https://iv.melmac.space",
+        "https://invidious.perennialte.ch",
+        "https://yt.artemislena.eu"
     ]
     
     direct_download_url = None
