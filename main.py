@@ -1,10 +1,9 @@
 import os
-import glob
+import requests
 # Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import yt_dlp
 
 # Получаем путь к корневой директории
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,20 +18,16 @@ app = Flask(
 limiter = Limiter(
     get_remote_address,               # Определяем пользователя по его IP-адресу
     app=app,
-    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим (чтобы не блочить обычных людей)
-    storage_uri="memory://"           # Храним данные в оперативной памяти (для 1 сервера этого за глаза)
+    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим
+    storage_uri="memory://"           # Храним данные в оперативной памяти
 )
-
-DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
-if not os.path.exists(DOWNLOAD_FOLDER):
-    os.makedirs(DOWNLOAD_FOLDER)
 
 # Кастомная ошибка, если пользователь превысил лимит запросов
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return jsonify({
         'success': False, 
-        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим скачиванием.'
+        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим действием.'
     }), 429
 
 @app.route('/')
@@ -41,109 +36,94 @@ def home():
 
 
 # ==========================================
-# НОВЫЙ БЛОК: СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
+# СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
 # ==========================================
 
 @app.route('/sitemap.xml')
 def sitemap():
-    # Отдаем sitemap.xml прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'sitemap.xml', mimetype='application/xml')
 
 @app.route('/robots.txt')
 def robots():
-    # Отдаем robots.txt прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 
 # ==========================================
 
 
-# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
-# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
+# МЕТОД ОБРАБОТКИ ЗАПРОСА СКАЧИВАНИЯ
 @app.route('/download', methods=['POST'])
 @limiter.limit("3 per minute; 30 per hour") 
 def download_video():
     data = request.json or {}
     video_url = data.get('url')
-
-    # ПРОВЕРКА СОГЛАСИЯ
     agreed = data.get('agreed')
+    
+    # ПРОВЕРКА СОГЛАСИЯ
     if not agreed:
         return jsonify({'success': False, 'error': 'Вы должны согласиться с условиями'}), 400
 
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-  ydl_opts = {
-    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-    'noplaylist': True,
-    # Активируем встроенный плагин авторизации
-    'username': 'oauth2',
-    'password': '', 
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['android', 'web'],
-def download_video(url):
-    # Перед каждой строчкой внутри функции должно быть строго по 4 или 8 пробелов!
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'noplaylist': True,
-        'username': 'oauth2',
-        'password': '', 
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'web'],
-            }
-        }
+    # Заголовки для обхода блокировок внешних шлюзов
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-}
+    
+    payload = {
+        "url": video_url,
+        "videoQuality": "720",
+        "audioFormat": "mp3",
+        "isNoTTWatermark": True
+    }
 
-    # Дальше идет твой код вызова yt_dlp...
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            filename = ydl.prepare_filename(info)
+    # Используем отказоустойчивые API-шлюзы для мгновенного разбора ссылок
+    api_endpoints = [
+        "https://api.cobalt.tools/api/json",
+        "https://co.wuk.sh/api/json",
+        "https://cobalt.api.g7kk.com/api/json"
+    ]
 
-        if not os.path.exists(filename):
-            base_path = os.path.splitext(filename)[0]
-            found = glob.glob(base_path + '.*')
-            if found: 
-                filename = found[0]
+    for api_url in api_endpoints:
+        try:
+            response = requests.post(api_url, json=payload, headers=headers, timeout=10)
+            if response.status_code == 200:
+                res_data = response.json()
+                status = res_data.get("status")
+                
+                if status in ["stream", "redirect"]:
+                    direct_url = res_data.get("url")
+                    if direct_url:
+                        return jsonify({
+                            'success': True, 
+                            'download_url': direct_url, 
+                            'title': 'Media File'
+                        })
+                
+                elif status == "picker":
+                    picker_items = res_data.get("picker", [])
+                    if picker_items and picker_items[0].get("url"):
+                        return jsonify({
+                            'success': True, 
+                            'download_url': picker_items[0].get("url"), 
+                            'title': 'Media File'
+                        })
+        except Exception:
+            continue
 
-        return jsonify({
-            'success': True, 
-            'file_id': os.path.basename(filename), 
-            'title': info.get('title', 'Media')
-        })
-    except Exception as e:
-        if 'File is larger than max-filesize' in str(e):
-            return jsonify({'success': False, 'error': 'Файл слишком большой. Лимит сервера: 350 МБ.'}), 400
-        return jsonify({'success': False, 'error': str(e)}), 500
+    return jsonify({
+        'success': False, 
+        'error': 'Сервер не смог получить ссылку для скачивания. Пожалуйста, попробуйте другую ссылку или повторите позже.'
+    }), 500
 
+
+# Заглушка для старого метода, чтобы фронтенд не выдавал ошибку 404
 @app.route('/get-file/<file_id>')
 def get_file(file_id):
-    file_path = os.path.join(DOWNLOAD_FOLDER, file_id)
+    return 'Этот метод устарел, скачивание теперь идет напрямую.', 410
 
-    if os.path.exists(file_path):
-        def generate():
-            try:
-                with open(file_path, 'rb') as f:
-                    while chunk := f.read(8192):
-                        yield chunk
-            finally:
-                try:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                except Exception as e:
-                    app.logger.error(f"Ошибка при удалении файла: {e}")
-
-        response = Response(
-            stream_with_context(generate()),
-            mimetype='application/octet-stream'
-        )
-        response.headers["Content-Disposition"] = f"attachment; filename={file_id}"
-        return response
-
-    return 'Файл не найден', 404
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
