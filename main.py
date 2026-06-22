@@ -73,13 +73,18 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    ydl_opts = {
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-        # Просим чистый оригинал без рендеринга водяного знака
-        'format': 'bestvideo+bestaudio/best', 
-        'noplaylist': True,
-        'max_filesize': 350 * 1024 * 1024,
+  ydl_opts = {
+    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    'noplaylist': True,
+    # Активируем встроенный плагин авторизации
+    'username': 'oauth2',
+    'password': '', 
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['android', 'web'],
+        }
     }
+}
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
