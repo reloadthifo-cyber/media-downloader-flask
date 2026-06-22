@@ -1,5 +1,4 @@
 Flask
 Flask-Limiter
 requests
-yt-dlp
 gunicorn
