@@ -58,19 +58,22 @@ def robots():
 @app.route('/download', methods=['POST'])
 @limiter.limit("3 per minute; 30 per hour") 
 def download():
-    # Получаем URL из POST-запроса (в зависимости от того, как отправляете: json или form)
+    # Получаем URL из POST-запроса
     data = request.get_json() or request.form
     video_url = data.get('url') if data else None
 
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
-ydl_opts = {
-    'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-    'format': 'bestvideo+bestaudio/best', 
-    'noplaylist': True,
-    'max_filesize': 350 * 1024 * 1024,
-    'proxy': 'http://ваш_логин:ваш_пароль@ip_прокси:порт', # Добавьте это
-}
+
+    ydl_opts = {
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
+        'format': 'bestvideo+bestaudio/best', 
+        'noplaylist': True,
+        'max_filesize': 350 * 1024 * 1024,
+        # Если прокси пока нет, закомментируйте строку ниже, поставив перед ней #
+        'proxy': 'http://ваш_логин:ваш_пароль@ip_прокси:порт', 
+    }
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
