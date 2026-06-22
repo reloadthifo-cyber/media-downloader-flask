@@ -1,12 +1,9 @@
 import os
-import re
 import requests
-# Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
-from flask import Flask, render_template, request, jsonify, Response, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-# Получаем путь к корневой директории
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(
@@ -15,28 +12,24 @@ app = Flask(
     static_folder=BASE_DIR
 )
 
-# НАСТРОЙКА ЗАЩИТЫ ОТ DDOS / ФЛУДА
 limiter = Limiter(
-    get_remote_address,               # Определяем пользователя по его IP-адресу
+    get_remote_address,
     app=app,
-    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим
-    storage_uri="memory://"           # Храним данные в оперативной памяти
+    default_limits=[],
+    storage_uri="memory://"
 )
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return jsonify({
         'success': False, 
-        'error': 'Слишком много запросов! Пожалуйста, подождите немного перед следующим действием.'
+        'error': 'Слишком много запросов! Пожалуйста, подождите немного.'
     }), 429
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# ==========================================
-# СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
-# ==========================================
 @app.route('/sitemap.xml')
 def sitemap():
     return send_from_directory(BASE_DIR, 'sitemap.xml', mimetype='application/xml')
@@ -44,10 +37,9 @@ def sitemap():
 @app.route('/robots.txt')
 def robots():
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
-# ==========================================
 
 @app.route('/download', methods=['POST'])
-@limiter.limit("5 per minute; 60 per hour") 
+@limiter.limit("10 per minute; 100 per hour") 
 def download_video():
     data = request.json or {}
     video_url = data.get('url')
@@ -59,74 +51,61 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # Используем проверенный и отказоустойчивый шлюз Cobalt API
-    # Он развернут на независимых серверах и мгновенно переваривает Shorts и обычный YouTube
-    api_url = "https://api.cobalt.tools/api/json"
+    # Правильные заголовки и структура JSON для Cobalt API
     headers = {
         "Accept": "application/json",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
+    
     payload = {
         "url": video_url,
-        "videoQuality": "720", # Оптимальное качество для быстрой отдачи
+        "videoQuality": "720",  # Числовая строка или стандартное качество
         "audioFormat": "mp3",
         "isNoTTWatermark": True
     }
 
-    try:
-        # Отправляем запрос к шлюзу
-        response = requests.post(api_url, json=payload, headers=headers, timeout=8)
-        
-        if response.status_code == 200:
-            res_data = response.json()
-            status = res_data.get("status")
+    # Список зеркал Cobalt API для максимальной надежности
+    api_endpoints = [
+        "https://api.cobalt.tools/api/json",
+        "https://co.wuk.sh/api/json",
+        "https://cobalt.api.g7kk.com/api/json"
+    ]
+
+    for api_url in api_endpoints:
+        try:
+            response = requests.post(api_url, json=payload, headers=headers, timeout=10)
             
-            # Если шлюз успешно сгенерировал прямую ссылку
-            if status == "stream" or status == "redirect":
-                direct_download_url = res_data.get("url")
-                video_title = "YouTube Video"  # Шлюз отдает чистый поток
+            if response.status_code == 200:
+                res_data = response.json()
+                status = res_data.get("status")
                 
-                return jsonify({
-                    'success': True, 
-                    'download_url': direct_download_url, 
-                    'title': video_title
-                })
-            
-            elif status == "picker":
-                # Если видео содержит несколько потоков, берем первый доступный
-                picker_items = res_data.get("picker", [])
-                if picker_items:
-                    direct_download_url = picker_items[0].get("url")
-                    return jsonify({
-                        'success': True, 
-                        'download_url': direct_download_url, 
-                        'title': "YouTube Video"
-                    })
+                # Обработка успешных статусов согласно спецификации
+                if status in ["stream", "redirect"]:
+                    direct_url = res_data.get("url")
+                    if direct_url:
+                        return jsonify({
+                            'success': True, 
+                            'download_url': direct_url, 
+                            'title': 'YouTube Video'
+                        })
+                
+                elif status == "picker":
+                    picker_items = res_data.get("picker", [])
+                    if picker_items and picker_items[0].get("url"):
+                        return jsonify({
+                            'success': True, 
+                            'download_url': picker_items[0].get("url"), 
+                            'title': 'YouTube Video'
+                        })
+        except Exception as e:
+            print(f"Эндпоинт {api_url} завершился ошибкой: {str(e)}")
+            continue
 
-        # Если основной эндпоинт вернул ошибку, пробуем запасное зеркало шлюза
-        fallback_url = "https://co.wuk.sh/api/json"
-        response = requests.post(fallback_url, json=payload, headers=headers, timeout=8)
-        if response.status_code == 200:
-            res_data = response.json()
-            direct_download_url = res_data.get("url")
-            if direct_download_url:
-                return jsonify({
-                    'success': True, 
-                    'download_url': direct_download_url, 
-                    'title': "YouTube Video"
-                })
-
-        return jsonify({
-            'success': False, 
-            'error': 'Выбранное видео временно недоступно для обработки. Попробуйте другую ссылку.'
-        }), 500
-
-    except Exception as e:
-        print(f"Ошибка внешнего API: {str(e)}")
-        return jsonify({
-            'success': False, 
-            'error': 'Произошла ошибка при согласовании потока. Повторите попытку позже.'
-        }), 500
+    return jsonify({
+        'success': False, 
+        'error': 'Не удалось получить прямую ссылку через шлюзы. Попробуйте еще раз или используйте другое видео.'
+    }), 500
 
 @app.route('/get-file/<file_id>')
 def get_file(file_id):
