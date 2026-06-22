@@ -1,11 +1,9 @@
 import os
-import requests
-# Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
-from flask import Flask, render_template, request, jsonify, Response, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import yt_dlp
 
-# Получаем путь к корневой директории
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(
@@ -14,15 +12,13 @@ app = Flask(
     static_folder=BASE_DIR
 )
 
-# НАСТРОЙКА ЗАЗАЩИТЫ ОТ DDOS / ФЛУДА
 limiter = Limiter(
-    get_remote_address,               # Определяем пользователя по его IP-адресу
+    get_remote_address,
     app=app,
-    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим
-    storage_uri="memory://"           # Храним данные в оперативной памяти
+    default_limits=[],
+    storage_uri="memory://"
 )
 
-# Кастомная ошибка, если пользователь превысил лимит запросов
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return jsonify({
@@ -34,11 +30,6 @@ def ratelimit_handler(e):
 def home():
     return render_template('index.html')
 
-
-# ==========================================
-# СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
-# ==========================================
-
 @app.route('/sitemap.xml')
 def sitemap():
     return send_from_directory(BASE_DIR, 'sitemap.xml', mimetype='application/xml')
@@ -47,36 +38,59 @@ def sitemap():
 def robots():
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 
-# ==========================================
-
-
-# МЕТОД ОБРАБОТКИ ЗАПРОСА СКАЧИВАНИЯ
 @app.route('/download', methods=['POST'])
-@limiter.limit("3 per minute; 30 per hour") 
+@limiter.limit("5 per minute; 60 per hour") 
 def download_video():
     data = request.json or {}
     video_url = data.get('url')
-    
-    # ПРОВЕРКА СОГЛАСИЯ
     agreed = data.get('agreed')
+    
     if not agreed:
         return jsonify({'success': False, 'error': 'Вы должны согласиться с условиями'}), 400
 
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # Возвращаем базовый заглушечный ответ бэкенда
-    return jsonify({
-        'success': False,
-        'error': 'Метод скачивания временно находится на техническом обслуживании.'
-    }), 501
+    # Настройки yt-dlp с обходом блокировок хостингов
+    ydl_opts = {
+        'format': 'best',
+        'skip_download': True, # Нам нужна только ссылка, файл не сохраняем
+        'quiet': True,
+        'no_warnings': True,
+        # Имитируем трафик с мобильного приложения, чтобы YouTube не выдавал 403 Forbidden
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios'],
+                'skip': ['dash', 'hls']
+            }
+        }
+    }
 
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+            direct_download_url = info.get('url')
+            video_title = info.get('title', 'Media')
 
-# Заглушка для старого метода скачивания
+            if direct_download_url:
+                return jsonify({
+                    'success': True, 
+                    'download_url': direct_download_url, 
+                    'title': video_title
+                })
+            else:
+                return jsonify({'success': False, 'error': 'Не удалось извлечь поток видео.'}), 500
+
+    except Exception as e:
+        print(f"Ошибка yt-dlp core: {str(e)}")
+        return jsonify({
+            'success': False, 
+            'error': 'Не удалось обработать ссылку. Убедитесь, что видео открыто для просмотра.'
+        }), 500
+
 @app.route('/get-file/<file_id>')
 def get_file(file_id):
     return 'Этот метод устарел, скачивание теперь прямое.', 410
-
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
