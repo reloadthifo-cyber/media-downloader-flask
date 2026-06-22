@@ -1,4 +1,4 @@
-Flask
 Flask-Limiter
 requests
 gunicorn
+yt-dlp
