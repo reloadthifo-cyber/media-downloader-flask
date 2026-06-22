@@ -596,14 +596,15 @@
                     errorBlock.innerText = 'Ошибка: ' + result.error;
                     errorBlock.style.display = 'block';
                 } else {
-                    // ЮРИДИЧЕСКИ ЧИСТЫЙ МЕТОД: Скачивание силами браузера клиента через прямую ссылку
+                    // ИСПРАВЛЕНО: Ссылка теперь генерируется динамически через file_id
                     successBlock.innerText = `Ссылка успешно получена. Начинается сохранение...`;
                     successBlock.style.display = 'block';
                     
-                    // Создаем временную виртуальную ссылку для скачивания из стриминг-потока Invidious
+                    const downloadUrl = `/get-file/${result.file_id}`;
+                    
                     const a = document.createElement('a');
-                    a.href = result.download_url; // Берем прямую ссылку, сгенерированную бэкендом
-                    a.download = result.title + ".mp4"; // Передаем оригинальное название медиафайла
+                    a.href = downloadUrl; 
+                    a.download = result.title + ".mp4"; 
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
