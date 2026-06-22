@@ -64,14 +64,13 @@ def download():
 
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
-
-    ydl_opts = {
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-        'format': 'bestvideo+bestaudio/best', 
-        'noplaylist': True,
-        'max_filesize': 350 * 1024 * 1024,
-    }
-
+ydl_opts = {
+    'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
+    'format': 'bestvideo+bestaudio/best', 
+    'noplaylist': True,
+    'max_filesize': 350 * 1024 * 1024,
+    'proxy': 'http://ваш_логин:ваш_пароль@ip_прокси:порт', # Добавьте это
+}
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
