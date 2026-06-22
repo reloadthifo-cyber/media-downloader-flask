@@ -61,7 +61,7 @@ def robots():
 # Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
 @app.route('/download', methods=['POST'])
 @limiter.limit("3 per minute; 30 per hour") 
-@@ -72,60 +73,61 @@
+    
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
