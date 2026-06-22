@@ -1,9 +1,10 @@
 import os
+import re
+import requests
 # Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
 from flask import Flask, render_template, request, jsonify, Response, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import yt_dlp
 
 # Получаем путь к корневой директории
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -45,6 +46,12 @@ def robots():
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 # ==========================================
 
+# Функция точного поиска ID видео
+def extract_youtube_id(url):
+    pattern = r'(?:https?://)?(?:www\.)?(?:youtube\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)|shorts/|watch\?.*v=)|youtu\.be/)([^"&?/\s]{11})'
+    match = re.search(pattern, url)
+    return match.group(1) if match else None
+
 @app.route('/download', methods=['POST'])
 @limiter.limit("5 per minute; 60 per hour") 
 def download_video():
@@ -58,45 +65,56 @@ def download_video():
     if not video_url:
         return jsonify({'success': False, 'error': 'Ссылка пустая'}), 400
 
-    # Настройки для извлечения прямой ссылки без скачивания файла на сервер Render
-    ydl_opts = {
-        'format': 'best[ext=mp4]/best', # Ищем лучшее готовое качество со звуком (обычно 720p)
-        'skip_download': True,          # Нам нужна только ссылка, сам файл не качаем
-        'quiet': True,
-        'no_warnings': True,
-        # Обход замедлений и базовых проверок YouTube:
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'web'],
-                'skip': ['dash', 'hls']
-            }
-        }
-    }
+    # 1. Извлекаем ID с помощью регулярного выражения (поддерживает Shorts на 100%)
+    video_id = extract_youtube_id(video_url)
+    if not video_id:
+        return jsonify({'success': False, 'error': 'Не удалось распознать ссылку на видео. Проверьте формат.'}), 400
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # Извлекаем метаданные видео
-            info = ydl.extract_info(video_url, download=False)
+    # 2. Обновленный список активных и стабильных инстансов API Invidious
+    invidious_instances = [
+        "https://invidious.io.lol",
+        "https://yewtu.be",
+        "https://inv.tux.pizza",
+        "https://invidious.nerdvpn.de",
+        "https://iv.melmac.space",
+        "https://invidious.perennialte.ch",
+        "https://yt.artemislena.eu",
+        "https://invidious.flokinet.to"
+    ]
+    
+    direct_download_url = None
+    video_title = "Media"
+
+    # 3. Перебираем инстансы в поиске рабочего потока
+    for instance in invidious_instances:
+        try:
+            api_url = f"{instance}/api/v1/videos/{video_id}"
+            response = requests.get(api_url, timeout=4)
             
-            # Получаем прямую ссылку на видеопоток и название
-            direct_download_url = info.get('url')
-            video_title = info.get('title', 'Media')
+            if response.status_code == 200:
+                res_data = response.json()
+                video_title = res_data.get('title', 'Media')
+                format_streams = res_data.get('formatStreams', [])
+                
+                if format_streams:
+                    # Выбираем стабильный поток (обычно последний в списке — наилучший со звуком)
+                    direct_download_url = format_streams[-1].get('url')
+                    if direct_download_url:
+                        break
+        except Exception:
+            continue
 
-            if direct_download_url:
-                return jsonify({
-                    'success': True, 
-                    'download_url': direct_download_url, 
-                    'title': video_title
-                })
-            else:
-                return jsonify({'success': False, 'error': 'Поток видео не найден.'}), 500
-
-    except Exception as e:
-        # Логируем ошибку в консоль Render, чтобы ее было видно, если что-то пойдет не так
-        print(f"Ошибка yt-dlp: {str(e)}")
+    # 4. Возвращаем результат
+    if direct_download_url:
+        return jsonify({
+            'success': True, 
+            'download_url': direct_download_url, 
+            'title': video_title
+        })
+    else:
         return jsonify({
             'success': False, 
-            'error': 'Не удалось получить ссылку. Убедитесь, что видео открыто для публичного просмотра.'
+            'error': 'Все узлы обработки перегружены. Пожалуйста, попробуйте еще раз через минуту или с другим видео.'
         }), 500
 
 @app.route('/get-file/<file_id>')
