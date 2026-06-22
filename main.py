@@ -1,7 +1,7 @@
 import os
 import glob
-# Добавили функцию send_from_directory для безопасной отдачи sitemap и robots
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context, send_from_directory
+import time
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import yt_dlp
@@ -19,8 +19,8 @@ app = Flask(
 limiter = Limiter(
     get_remote_address,               # Определяем пользователя по его IP-адресу
     app=app,
-    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим (чтобы не блочить обычных людей)
-    storage_uri="memory://"           # Храним данные в оперативной памяти (для 1 сервера этого за глаза)
+    default_limits=[],                # По умолчанию лимиты на весь сайт НЕ ставим
+    storage_uri="memory://"           # Храним данные в оперативной памяти
 )
 
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
@@ -41,27 +41,35 @@ def home():
 
 
 # ==========================================
-# НОВЫЙ БЛОК: СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
+# СЛУЖЕБНЫЕ ФАЙЛЫ ДЛЯ ПОИСКОВИКОВ
 # ==========================================
 
 @app.route('/sitemap.xml')
 def sitemap():
-    # Отдаем sitemap.xml прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'sitemap.xml', mimetype='application/xml')
 
 @app.route('/robots.txt')
 def robots():
-    # Отдаем robots.txt прямо из корневой папки сайта (BASE_DIR)
     return send_from_directory(BASE_DIR, 'robots.txt', mimetype='text/plain')
 
 # ==========================================
 
 
-# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
-# Ограничиваем только эту кнопку: максимум 3 скачивания в минуту и 30 в час с одного IP
 @app.route('/download', methods=['POST'])
 @limiter.limit("3 per minute; 30 per hour") 
 def download_video():
+    # --- АВТООЧИСТКА СТАРЫХ ФАЙЛОВ ---
+    # Удаляем файлы старше 10 минут, чтобы на Render не забивалось место
+    try:
+        now = time.time()
+        for f in os.listdir(DOWNLOAD_FOLDER):
+            file_p = os.path.join(DOWNLOAD_FOLDER, f)
+            if os.path.isfile(file_p) and os.stat(file_p).st_mtime < now - 600:
+                os.remove(file_p)
+    except Exception as e:
+        app.logger.error(f"Ошибка при очистке старых файлов: {e}")
+    # ----------------------------------
+
     data = request.json or {}
     video_url = data.get('url')
 
@@ -75,7 +83,6 @@ def download_video():
 
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(id)s.%(ext)s'),
-        # Просим чистый оригинал без рендеринга водяного знака
         'format': 'bestvideo+bestaudio/best', 
         'noplaylist': True,
         'max_filesize': 350 * 1024 * 1024,
@@ -102,31 +109,25 @@ def download_video():
             return jsonify({'success': False, 'error': 'Файл слишком большой. Лимит сервера: 350 МБ.'}), 400
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
 @app.route('/get-file/<file_id>')
 def get_file(file_id):
-    file_path = os.path.join(DOWNLOAD_FOLDER, file_id)
+    # Безопасно извлекаем имя файла (защита от Path Traversal)
+    secure_id = os.path.basename(file_id)
+    file_path = os.path.join(DOWNLOAD_FOLDER, secure_id)
 
     if os.path.exists(file_path):
-        def generate():
-            try:
-                with open(file_path, 'rb') as f:
-                    while chunk := f.read(8192):
-                        yield chunk
-            finally:
-                try:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                except Exception as e:
-                    app.logger.error(f"Ошибка при удалении файла: {e}")
-
-        response = Response(
-            stream_with_context(generate()),
-            mimetype='application/octet-stream'
+        # send_from_directory корректно поддерживает докачку (Range requests)
+        # и стабильно работает на любых браузерах и прокси-серверах
+        return send_from_directory(
+            DOWNLOAD_FOLDER, 
+            secure_id, 
+            as_attachment=True,
+            download_name=secure_id
         )
-        response.headers["Content-Disposition"] = f"attachment; filename={file_id}"
-        return response
 
-    return 'Файл не найден', 404
+    return 'Файл не найден или был удален по таймеру', 404
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
